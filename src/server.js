@@ -38,29 +38,75 @@ initializeMqttClient(io);
 
 io.on('connection', (socket) => {
     console.log('💻 Novo cliente conectado via WebSocket:', socket.id);
+    
+    // Enviar confirmação de conexão
+    socket.emit('connected', { message: 'Conectado com sucesso!' });
+    
     socket.on('disconnect', () => console.log('🔌 Cliente desconectado:', socket.id));
 });
 
 // --- ROTAS DA API ---
 // Endpoint para dados históricos
 app.get('/api/leituras', async (req, res) => {
-  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  console.log('🔍 Requisição para /api/leituras recebida');
+  console.log('👤 Usuário:', req.user ? 'Autenticado' : 'Não autenticado');
+  
+  if (!req.user) {
+    console.log('❌ Usuário não autenticado');
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
 
-  // Cria um cliente supabase específico para este usuário
-  const { createClient } = require('@supabase/supabase-js');
-  const userSupabase = createClient(process.env.VITE_SUPABASE_URL, req.headers.authorization.split(' ')[1]);
-  const { data, error } = await userSupabase
-    .from('leituras_maquina')
-    .select('*')
-    .order('created_at', { ascending: true })
-    .limit(50);
+  try {
+    // Cria um cliente supabase específico para este usuário
+    const { createClient } = require('@supabase/supabase-js');
+    const userSupabase = createClient(process.env.VITE_SUPABASE_URL, req.headers.authorization.split(' ')[1]);
+    
+    console.log('🔍 Buscando dados históricos...');
+    const { data, error } = await userSupabase
+      .from('leituras_maquina')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(50);
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data);
+    if (error) {
+      console.log('❌ Erro ao buscar dados:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log('✅ Dados encontrados:', data ? data.length : 0, 'registros');
+    res.json(data);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Rota principal
 app.get('/', (req, res) => res.send('Arquiteto I.M.P. Backend: Online! (Refatorado)'));
+
+// Endpoint temporário para testar dados sem autenticação
+app.get('/api/leituras-test', async (req, res) => {
+  console.log('🔍 Teste: Buscando dados sem autenticação...');
+  
+  try {
+    const { data, error } = await supabase
+      .from('leituras_maquina')
+      .select('*')
+      .order('created_at', { ascending: true })
+      .limit(50);
+
+    if (error) {
+      console.log('❌ Erro ao buscar dados:', error);
+      return res.status(500).json({ error: error.message });
+    }
+    
+    console.log('✅ Dados encontrados (teste):', data ? data.length : 0, 'registros');
+    res.json(data);
+  } catch (err) {
+    console.log('❌ Erro na requisição (teste):', err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---

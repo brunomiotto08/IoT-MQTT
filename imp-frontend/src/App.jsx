@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { supabase } from './supabaseClient';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import Dashboard from './components/Dashboard';
 import { Box, CircularProgress } from '@mui/material';
+import theme from './theme';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -35,11 +38,14 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={!session ? <Navigate to="/login" /> : <Dashboard />} />
-      <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
-      <Route path="/signup" element={!session ? <SignUp /> : <Navigate to="/" />} />
-    </Routes>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Routes>
+        <Route path="/" element={!session ? <Navigate to="/login" /> : <Dashboard />} />
+        <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
+        <Route path="/signup" element={!session ? <SignUp /> : <Navigate to="/" />} />
+      </Routes>
+    </ThemeProvider>
   );
 }
 
