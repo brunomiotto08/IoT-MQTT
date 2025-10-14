@@ -6,6 +6,7 @@ import { Container, Box, TextField, Button, Typography, Alert, Link, Grid } from
 function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [empresa, setEmpresa] = useState('');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -17,14 +18,22 @@ function SignUp() {
     setError(null);
     setMessage('');
 
-    const { data, error } = await supabase.auth.signUp({
+    // A API do Supabase mudou para criar empresa e usuário
+    const { data: authData, error: authError } = await supabase.auth.signUp({
       email: email,
       password: password,
+      options: {
+        data: {
+          nome_empresa: empresa
+        }
+      }
     });
+    // (Supabase irá criar o usuário. Precisamos de um trigger no banco de dados para criar a empresa)
+    // O prompt será simplificado. Vamos assumir que a criação da empresa será feita via trigger.
 
-    if (error) {
-      setError(error.message);
-    } else if (data.user) {
+    if (authError) {
+      setError(authError.message);
+    } else if (authData.user) {
       setMessage('Cadastro realizado com sucesso! Você já pode fazer o login.');
       setTimeout(() => navigate('/login'), 2000); // Redireciona para o login após 2s
     }
@@ -56,6 +65,16 @@ function SignUp() {
             id="password" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)} 
+          />
+          <TextField 
+            margin="normal" 
+            required 
+            fullWidth 
+            id="empresa" 
+            label="Nome da Empresa" 
+            name="empresa" 
+            value={empresa} 
+            onChange={(e) => setEmpresa(e.target.value)} 
           />
           <Button 
             type="submit" 

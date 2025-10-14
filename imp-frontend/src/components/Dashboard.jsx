@@ -15,14 +15,29 @@ const API_URL = 'http://localhost:3000';
 function Dashboard() { // [MODIFICADO] Remove as props
   const [liveData, setLiveData] = useState(null);
   const [historicalData, setHistoricalData] = useState([]);
+  const [session, setSession] = useState(null);
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+    };
+    getSession();
+  }, []);
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      try {
-        const response = await axios.get(`${API_URL}/api/leituras`);
-        setHistoricalData(response.data || []);
-      } catch (error) {
-        console.error('Erro ao buscar dados históricos:', error);
+      if (session) { // Só busca dados se houver uma sessão
+        try {
+          const response = await axios.get(`${API_URL}/api/leituras`, {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`
+            }
+          });
+          setHistoricalData(response.data || []);
+        } catch (error) {
+          console.error('Erro ao buscar dados históricos:', error);
+        }
       }
     };
 
@@ -43,7 +58,7 @@ function Dashboard() { // [MODIFICADO] Remove as props
     return () => {
       socket.off('mqtt_message');
     };
-  }, []);
+  }, [session]); // Executa o efeito quando a sessão muda
 
   const handleLogout = async () => {
     await supabase.auth.signOut(); // Usa o cliente importado

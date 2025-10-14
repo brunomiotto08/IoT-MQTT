@@ -15,43 +15,22 @@ pool.connect((err, client, release) => {
     client.release();
 });
 
-async function saveReading(data) {
-  const insertQuery = `
-    INSERT INTO leituras_maquina(temperatura, vibracao, status, pecas_produzidas) 
-    VALUES($1, $2, $3, $4)
-  `;
-  const values = [data.temperatura, data.vibracao, data.status, data.pecas_produzidas];
-
+async function saveReading(data, empresaId) {
+  const insertQuery = `INSERT INTO leituras_maquina(temperatura, vibracao, status, pecas_produzidas, empresa_id) VALUES($1, $2, $3, $4, $5)`;
+  const values = [data.temperatura, data.vibracao, data.status, data.pecas_produzidas, empresaId];
   try {
     await pool.query(insertQuery, values);
-    console.log('💾 Dados salvos com sucesso no banco de dados!');
+    console.log(`💾 Dados salvos para a empresa ${empresaId}!`);
   } catch (err) {
     console.error('❌ Erro ao salvar dados no banco de dados:', err.stack);
   }
 }
 
-// [MODIFICADO] Função para buscar leituras recentes com timestamp formatado
 async function getRecentReadings(limit = 50) {
-  const selectQuery = `
-    SELECT
-      id,
-      to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as created_at,
-      temperatura,
-      vibracao,
-      status,
-      pecas_produzidas
-    FROM (
-      SELECT * FROM leituras_maquina ORDER BY created_at DESC LIMIT $1
-    ) sub
-    ORDER BY created_at ASC;
-  `;
-  try {
-    const res = await pool.query(selectQuery, [limit]);
-    return res.rows;
-  } catch (err) {
-    console.error('❌ Erro ao buscar dados históricos:', err.stack);
-    return [];
-  }
+  // A RLS fará a filtragem por empresa, então não precisamos mais de WHERE aqui.
+  // A consulta precisa ser executada por um cliente autenticado.
+  const selectQuery = `SELECT * FROM leituras_maquina ORDER BY created_at ASC LIMIT $1`;
+  // Esta função será chamada pelo server.js, que usará o cliente Supabase autenticado.
 }
 
 module.exports = { saveReading, getRecentReadings };

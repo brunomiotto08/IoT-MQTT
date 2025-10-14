@@ -6,7 +6,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
 const { initializeMqttClient } = require('./services/mqttClient');
-const { getRecentReadings } = require('./services/database');
+const { supabase } = require('./services/supabaseClient'); // Cliente supabase do backend
 
 // [NOVO] Importa a biblioteca cors
 const cors = require('cors');
@@ -23,6 +23,16 @@ const PORT = 3000;
 // Esta linha deve vir antes da definição das suas rotas (app.get).
 app.use(cors());
 
+// Middleware para extrair o usuário do token
+app.use(async (req, res, next) => {
+  if (req.headers.authorization) {
+    const token = req.headers.authorization.split(' ')[1];
+    const { data: { user } } = await supabase.auth.getUser(token);
+    req.user = user;
+  }
+  next();
+});
+
 // --- INICIALIZAÇÃO DO CLIENTE MQTT VIA SERVIÇO ---
 initializeMqttClient(io);
 
@@ -34,8 +44,19 @@ io.on('connection', (socket) => {
 // --- ROTAS DA API ---
 // Endpoint para dados históricos
 app.get('/api/leituras', async (req, res) => {
-  const readings = await getRecentReadings(50); // Busca as últimas 50 leituras
-  res.json(readings);
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+
+  // Cria um cliente supabase específico para este usuário
+  const { createClient } = require('@supabase/supabase-js');
+  const userSupabase = createClient(process.env.VITE_SUPABASE_URL, req.headers.authorization.split(' ')[1]);
+  const { data, error } = await userSupabase
+    .from('leituras_maquina')
+    .select('*')
+    .order('created_at', { ascending: true })
+    .limit(50);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
 });
 
 // Rota principal
