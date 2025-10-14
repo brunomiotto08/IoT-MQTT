@@ -6,16 +6,37 @@ import io from 'socket.io-client';
 // Importações do Material-UI
 import { Container, Grid, Paper, Typography, Box } from '@mui/material';
 import Chart from 'react-apexcharts';
+import axios from 'axios';
 
 const socket = io('http://localhost:3000');
+const API_URL = 'http://localhost:3000';
 
 function App() {
-  const [data, setData] = useState(null);
+  const [liveData, setLiveData] = useState(null);
+  const [historicalData, setHistoricalData] = useState([]);
 
   useEffect(() => {
+    const fetchInitialData = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/api/leituras`);
+        setHistoricalData(response.data || []);
+      } catch (error) {
+        console.error('Erro ao buscar dados históricos:', error);
+      }
+    };
+
+    fetchInitialData();
+
     socket.on('mqtt_message', (message) => {
-      console.log('Nova mensagem recebida do backend:', message);
-      setData(JSON.parse(message));
+      const parsed = JSON.parse(message);
+      // adiciona timestamp ISO para o dado em tempo real
+      parsed.created_at = new Date().toISOString();
+      setLiveData(parsed);
+
+      setHistoricalData((current) => {
+        const updated = [...current, parsed];
+        return updated.length > 50 ? updated.slice(1) : updated;
+      });
     });
 
     return () => {
@@ -49,7 +70,39 @@ function App() {
 
   // [A CORREÇÃO ESTÁ AQUI]
   // Garantimos que o valor passado para 'series' é um NÚMERO.
-  const temperaturaSeries = [data ? parseFloat(data.temperatura) : 0];
+  const temperaturaSeries = [liveData ? parseFloat(liveData.temperatura) : 0];
+
+  const lineChartOptions = {
+    chart: {
+      id: 'realtime-temperature',
+      animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 1000 } },
+      toolbar: { show: true },
+      zoom: { enabled: true }
+    },
+    xaxis: {
+      type: 'datetime',
+      labels: {
+        datetimeUTC: false,
+        format: 'HH:mm:ss'
+      }
+    },
+    yaxis: {
+      title: { text: 'Temperatura (°C)' },
+      labels: { formatter: (value) => (value !== undefined ? value.toFixed(1) : '0') }
+    },
+    stroke: { curve: 'smooth', width: 2 },
+    theme: { mode: 'dark' },
+    tooltip: { x: { format: 'dd MMM yyyy - HH:mm:ss' } },
+    markers: { size: 0 }
+  };
+
+  const lineChartSeries = [{
+    name: 'Temperatura',
+    data: historicalData.map((d) => ({
+      x: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+      y: d.temperatura != null ? parseFloat(d.temperatura) : 0
+    }))
+  }];
 
   const DataCard = ({ title, value, unit }) => (
     <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center', height: '100%' }}>
@@ -72,13 +125,20 @@ function App() {
             </Paper>
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-            <DataCard title="Vibração" value={data ? data.vibracao.toFixed(2) : null} unit="mm/s" />
+            <DataCard title="Vibração" value={liveData ? liveData.vibracao.toFixed(2) : null} unit="mm/s" />
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-            <DataCard title="Status da Máquina" value={data ? data.status : null} unit="" />
+            <DataCard title="Status da Máquina" value={liveData ? liveData.status : null} unit="" />
           </Grid>
           <Grid item xs={12} sm={6} md={4}>
-            <DataCard title="Peças Produzidas" value={data ? data.pecas_produzidas : null} unit="" />
+            <DataCard title="Peças Produzidas" value={liveData ? liveData.pecas_produzidas : null} unit="" />
+          </Grid>
+          {/* Gráfico de Linha Histórico */}
+          <Grid item xs={12}>
+            <Paper elevation={3} sx={{ padding: '16px' }}>
+              <Typography variant="h6" align="center">Histórico de Temperatura</Typography>
+              <Chart options={lineChartOptions} series={lineChartSeries} type="line" height={350} />
+            </Paper>
           </Grid>
         </Grid>
       </Box>

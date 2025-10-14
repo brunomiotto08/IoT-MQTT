@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ignora o arquivo de variáveis de ambiente (segredos)
+.env
