@@ -4,9 +4,13 @@ import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
 // Importações do Material-UI
-import { Container, Grid, Paper, Typography, Box } from '@mui/material';
-import Chart from 'react-apexcharts';
+import { Container, Typography, Box, Grid } from '@mui/material';
 import axios from 'axios';
+
+// Componentes apresentacionais
+import DataCard from './components/DataCard';
+import GaugeChart from './components/GaugeChart';
+import LineChart from './components/LineChart';
 
 const socket = io('http://localhost:3000');
 const API_URL = 'http://localhost:3000';
@@ -44,72 +48,14 @@ function App() {
     };
   }, []);
 
-  const temperaturaOptions = {
-    chart: { type: 'radialBar' },
-    theme: { mode: 'dark' },
-    plotOptions: {
-      radialBar: {
-        startAngle: -135,
-        endAngle: 135,
-        hollow: { size: '70%' },
-        dataLabels: {
-          name: { show: false },
-          value: {
-            fontSize: '30px',
-            show: true,
-            formatter: (val) => `${parseFloat(val).toFixed(1)} °C`, // Formata o valor exibido
-            color: '#FFFFFF'
-          }
-        }
-      }
-    },
-    fill: { colors: ['#00E396'] },
-    labels: ['Temperatura'],
-    stroke: { lineCap: 'round' },
-  };
-
-  // [A CORREÇÃO ESTÁ AQUI]
-  // Garantimos que o valor passado para 'series' é um NÚMERO.
-  const temperaturaSeries = [liveData ? parseFloat(liveData.temperatura) : 0];
-
-  const lineChartOptions = {
-    chart: {
-      id: 'realtime-temperature',
-      animations: { enabled: true, easing: 'linear', dynamicAnimation: { speed: 1000 } },
-      toolbar: { show: true },
-      zoom: { enabled: true }
-    },
-    xaxis: {
-      type: 'datetime',
-      labels: {
-        datetimeUTC: false,
-        format: 'HH:mm:ss'
-      }
-    },
-    yaxis: {
-      title: { text: 'Temperatura (°C)' },
-      labels: { formatter: (value) => (value !== undefined ? value.toFixed(1) : '0') }
-    },
-    stroke: { curve: 'smooth', width: 2 },
-    theme: { mode: 'dark' },
-    tooltip: { x: { format: 'dd MMM yyyy - HH:mm:ss' } },
-    markers: { size: 0 }
-  };
-
-  const lineChartSeries = [{
+  const gaugeSeries = [liveData ? parseFloat(liveData.temperatura) : 0];
+  const lineSeries = [{
     name: 'Temperatura',
-    data: historicalData.map((d) => ({
-      x: d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-      y: d.temperatura != null ? parseFloat(d.temperatura) : 0
-    }))
+    data: historicalData.map((d) => ([
+      d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+      d.temperatura != null ? parseFloat(d.temperatura) : 0
+    ]))
   }];
-
-  const DataCard = ({ title, value, unit }) => (
-    <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center', height: '100%' }}>
-      <Typography variant="h6">{title}</Typography>
-      <Typography variant="h4">{value !== null ? `${value} ${unit}` : '...'}</Typography>
-    </Paper>
-  );
 
   return (
     <Container maxWidth="lg">
@@ -118,27 +64,21 @@ function App() {
           Plataforma de Monitoramento Industrial (I.M.P.)
         </Typography>
         <Grid container spacing={3} justifyContent="center">
-          <Grid item xs={12} sm={6} md={4}>
-            <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center' }}>
-              <Typography variant="h6">Temperatura</Typography>
-              <Chart options={temperaturaOptions} series={temperaturaSeries} type="radialBar" height={280} />
-            </Paper>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <GaugeChart series={gaugeSeries} />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <DataCard title="Vibração" value={liveData ? liveData.vibracao.toFixed(2) : null} unit="mm/s" />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <DataCard title="Status da Máquina" value={liveData ? liveData.status : null} unit="" />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
             <DataCard title="Peças Produzidas" value={liveData ? liveData.pecas_produzidas : null} unit="" />
           </Grid>
           {/* Gráfico de Linha Histórico */}
-          <Grid item xs={12}>
-            <Paper elevation={3} sx={{ padding: '16px' }}>
-              <Typography variant="h6" align="center">Histórico de Temperatura</Typography>
-              <Chart options={lineChartOptions} series={lineChartSeries} type="line" height={350} />
-            </Paper>
+          <Grid size={12}>
+            <LineChart series={lineSeries} />
           </Grid>
         </Grid>
       </Box>
