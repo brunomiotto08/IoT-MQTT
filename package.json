@@ -11,8 +11,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.4",
+    "apexcharts": "^5.3.5",
     "express": "^5.1.0",
     "mqtt": "^5.14.1",
+    "react-apexcharts": "^1.8.0",
     "socket.io": "^4.8.1"
   }
 }
