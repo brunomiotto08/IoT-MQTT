@@ -1,51 +1,88 @@
-// src/App.jsx
+// src/App.jsx (versão com a correção final)
 
-// Importa os "Hooks" do React que vamos usar: useState e useEffect
 import { useState, useEffect } from 'react';
-// Importa a biblioteca socket.io-client que instalamos
 import io from 'socket.io-client';
 
-// Estabelece a conexão com nosso backend.
-// ATENÇÃO: O endereço deve ser o do seu backend, que está rodando em localhost na porta 3000.
+// Importações do Material-UI
+import { Container, Grid, Paper, Typography, Box } from '@mui/material';
+import Chart from 'react-apexcharts';
+
 const socket = io('http://localhost:3000');
 
 function App() {
-  // Cria um "estado" chamado 'data' para armazenar a última mensagem recebida.
-  // 'setData' é a função que usamos para atualizar esse estado.
   const [data, setData] = useState(null);
 
-  // useEffect é um Hook que executa "efeitos colaterais" em componentes funcionais.
-  // Conectar a um socket é um efeito colateral.
-  // O array vazio [] no final faz com que este efeito execute apenas UMA VEZ,
-  // quando o componente é montado pela primeira vez.
   useEffect(() => {
-    // Liga um "ouvinte" para o evento 'mqtt_message'.
-    // Este nome de evento ('mqtt_message') DEVE ser o mesmo que o backend usa no 'io.emit()'.
     socket.on('mqtt_message', (message) => {
       console.log('Nova mensagem recebida do backend:', message);
-      // Quando uma mensagem chega, nós a salvamos no nosso estado 'data'.
-      // Como a mensagem é uma string JSON, nós a convertemos para um objeto JavaScript.
       setData(JSON.parse(message));
     });
 
-    // Função de "limpeza": será executada quando o componente for "desmontado".
-    // Isso é uma boa prática para evitar conexões duplicadas.
     return () => {
       socket.off('mqtt_message');
     };
-  }, []); // O array vazio significa: execute este efeito apenas uma vez.
+  }, []);
+
+  const temperaturaOptions = {
+    chart: { type: 'radialBar' },
+    theme: { mode: 'dark' },
+    plotOptions: {
+      radialBar: {
+        startAngle: -135,
+        endAngle: 135,
+        hollow: { size: '70%' },
+        dataLabels: {
+          name: { show: false },
+          value: {
+            fontSize: '30px',
+            show: true,
+            formatter: (val) => `${parseFloat(val).toFixed(1)} °C`, // Formata o valor exibido
+            color: '#FFFFFF'
+          }
+        }
+      }
+    },
+    fill: { colors: ['#00E396'] },
+    labels: ['Temperatura'],
+    stroke: { lineCap: 'round' },
+  };
+
+  // [A CORREÇÃO ESTÁ AQUI]
+  // Garantimos que o valor passado para 'series' é um NÚMERO.
+  const temperaturaSeries = [data ? parseFloat(data.temperatura) : 0];
+
+  const DataCard = ({ title, value, unit }) => (
+    <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center', height: '100%' }}>
+      <Typography variant="h6">{title}</Typography>
+      <Typography variant="h4">{value !== null ? `${value} ${unit}` : '...'}</Typography>
+    </Paper>
+  );
 
   return (
-    <div>
-      <h1>Plataforma de Monitoramento Industrial (I.M.P.)</h1>
-      <h2>Dados da Máquina em Tempo Real</h2>
-      {/* Exibimos os dados recebidos. Usamos uma verificação para garantir que 'data' não é nulo. */}
-      {data ? (
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      ) : (
-        <p>Aguardando dados...</p>
-      )}
-    </div>
+    <Container maxWidth="lg">
+      <Box sx={{ my: 4 }}>
+        <Typography variant="h4" component="h1" gutterBottom align="center">
+          Plataforma de Monitoramento Industrial (I.M.P.)
+        </Typography>
+        <Grid container spacing={3} justifyContent="center">
+          <Grid item xs={12} sm={6} md={4}>
+            <Paper elevation={3} sx={{ padding: '16px', textAlign: 'center' }}>
+              <Typography variant="h6">Temperatura</Typography>
+              <Chart options={temperaturaOptions} series={temperaturaSeries} type="radialBar" height={280} />
+            </Paper>
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <DataCard title="Vibração" value={data ? data.vibracao.toFixed(2) : null} unit="mm/s" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <DataCard title="Status da Máquina" value={data ? data.status : null} unit="" />
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
+            <DataCard title="Peças Produzidas" value={data ? data.pecas_produzidas : null} unit="" />
+          </Grid>
+        </Grid>
+      </Box>
+    </Container>
   );
 }
 
