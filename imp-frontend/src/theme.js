@@ -4,86 +4,242 @@ const theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#6366f1',
-      dark: '#4f46e5',
-      light: '#8b5cf6',
-    },
-    secondary: {
       main: '#8b5cf6',
       dark: '#7c3aed',
       light: '#a78bfa',
     },
+    secondary: {
+      main: '#06b6d4',
+      dark: '#0891b2',
+      light: '#22d3ee',
+    },
+    success: {
+      main: '#10b981',
+      dark: '#059669',
+      light: '#34d399',
+    },
+    warning: {
+      main: '#f59e0b',
+      dark: '#d97706',
+      light: '#fbbf24',
+    },
+    error: {
+      main: '#ef4444',
+      dark: '#dc2626',
+      light: '#f87171',
+    },
+    info: {
+      main: '#3b82f6',
+      dark: '#2563eb',
+      light: '#60a5fa',
+    },
     background: {
-      default: '#0f172a',
-      paper: '#1e293b',
+      default: '#0a0a0a',
+      paper: 'rgba(20, 20, 20, 0.95)',
     },
     text: {
-      primary: '#f8fafc',
-      secondary: '#cbd5e1',
+      primary: '#ffffff',
+      secondary: '#e2e8f0',
     },
-    divider: '#334155',
+    divider: 'rgba(60, 60, 60, 0.3)',
   },
   typography: {
-    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", sans-serif',
+    fontFamily: '"Outfit", "Poppins", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     h1: {
-      fontWeight: 700,
-      fontSize: '2.5rem',
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 900,
+      fontSize: '3.5rem',
+      letterSpacing: '-0.03em',
+      background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
     },
     h2: {
-      fontWeight: 600,
-      fontSize: '2rem',
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 800,
+      fontSize: '2.5rem',
+      letterSpacing: '-0.02em',
     },
     h3: {
-      fontWeight: 600,
-      fontSize: '1.75rem',
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 800,
+      fontSize: '2rem',
+      letterSpacing: '-0.02em',
     },
     h4: {
-      fontWeight: 600,
-      fontSize: '1.5rem',
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 700,
+      fontSize: '1.75rem',
+      letterSpacing: '-0.01em',
     },
     h5: {
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 700,
+      fontSize: '1.5rem',
+      letterSpacing: '-0.01em',
+    },
+    h6: {
+      fontFamily: '"Outfit", sans-serif',
       fontWeight: 600,
       fontSize: '1.25rem',
     },
-    h6: {
-      fontWeight: 600,
-      fontSize: '1.125rem',
-    },
     body1: {
+      fontFamily: '"Poppins", sans-serif',
       fontSize: '1rem',
-      lineHeight: 1.6,
+      fontWeight: 400,
+      lineHeight: 1.7,
     },
     body2: {
+      fontFamily: '"Poppins", sans-serif',
       fontSize: '0.875rem',
-      lineHeight: 1.5,
+      fontWeight: 400,
+      lineHeight: 1.6,
+    },
+    button: {
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 600,
+      letterSpacing: '0.02em',
+    },
+    caption: {
+      fontFamily: '"Poppins", sans-serif',
+      fontWeight: 500,
+    },
+    overline: {
+      fontFamily: '"Outfit", sans-serif',
+      fontWeight: 700,
+      letterSpacing: '0.1em',
     },
   },
   shape: {
-    borderRadius: 12,
+    borderRadius: 16,
   },
+  shadows: [
+    'none',
+    '0 2px 4px rgba(0,0,0,0.1)',
+    '0 4px 8px rgba(0,0,0,0.12)',
+    '0 8px 16px rgba(0,0,0,0.14)',
+    '0 12px 24px rgba(0,0,0,0.16)',
+    '0 16px 32px rgba(0,0,0,0.18)',
+    '0 20px 40px rgba(139, 92, 246, 0.3)',
+    '0 24px 48px rgba(6, 182, 212, 0.3)',
+    ...Array(17).fill('0 0 0 0 rgba(0,0,0,0)'),
+  ],
   components: {
     MuiCard: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e293b',
-          border: '1px solid #334155',
-          borderRadius: 12,
+          background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(80, 80, 80, 0.3)',
+          borderRadius: 20,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-8px)',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
+            borderColor: 'rgba(120, 120, 120, 0.5)',
+          },
         },
       },
     },
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 8,
+          borderRadius: 14,
           textTransform: 'none',
-          fontWeight: 500,
+          fontWeight: 700,
+          fontSize: '1rem',
+          padding: '14px 32px',
+          boxShadow: 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+        contained: {
+          background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+          color: '#ffffff',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #7c3aed 0%, #0891b2 100%)',
+            boxShadow: '0 8px 24px rgba(139, 92, 246, 0.5)',
+            transform: 'translateY(-2px)',
+          },
+        },
+        outlined: {
+          borderWidth: 2,
+          borderColor: 'rgba(139, 92, 246, 0.6)',
+          color: '#ffffff',
+          '&:hover': {
+            borderWidth: 2,
+            borderColor: '#8b5cf6',
+            background: 'rgba(139, 92, 246, 0.15)',
+            transform: 'translateY(-2px)',
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 14,
+            backgroundColor: 'rgba(25, 25, 25, 0.8)',
+            transition: 'all 0.3s ease',
+            '& fieldset': {
+              borderColor: 'rgba(100, 100, 100, 0.4)',
+              borderWidth: 2,
+            },
+            '&:hover fieldset': {
+              borderColor: 'rgba(150, 150, 150, 0.6)',
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: '#a0a0a0',
+              boxShadow: '0 0 0 4px rgba(100, 100, 100, 0.15)',
+            },
+          },
+          '& .MuiInputLabel-root': {
+            fontFamily: '"Poppins", sans-serif',
+            fontWeight: 500,
+          },
         },
       },
     },
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: 6,
+          borderRadius: 10,
+          fontFamily: '"Outfit", sans-serif',
+          fontWeight: 700,
+          fontSize: '0.875rem',
+          padding: '4px 8px',
+        },
+        outlined: {
+          borderWidth: 2,
+        },
+      },
+    },
+    MuiLinearProgress: {
+      styleOverrides: {
+        root: {
+          borderRadius: 4,
+          backgroundColor: 'rgba(139, 92, 246, 0.15)',
+          height: 6,
+        },
+        bar: {
+          borderRadius: 4,
+          background: 'linear-gradient(90deg, #8b5cf6 0%, #06b6d4 100%)',
+        },
+      },
+    },
+    MuiCircularProgress: {
+      styleOverrides: {
+        root: {
+          color: '#8b5cf6',
+        },
+      },
+    },
+    MuiAvatar: {
+      styleOverrides: {
+        root: {
+          fontFamily: '"Outfit", sans-serif',
+          fontWeight: 700,
         },
       },
     },
