@@ -39,23 +39,56 @@ function SignUp() {
     setError(null);
     setMessage('');
 
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-      options: {
-        data: {
-          nome_empresa: empresa
-        }
-      }
-    });
+    try {
+      // 1. Criar o usuário no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      });
 
-    if (authError) {
-      setError(authError.message);
-    } else if (authData.user) {
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        setError('Erro ao criar usuário. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Criar empresa e vincular usuário usando a função SQL
+      const { data: empresaData, error: empresaError } = await supabase.rpc(
+        'create_empresa_and_link_user',
+        {
+          user_id_param: authData.user.id,
+          email_param: email,
+          nome_empresa_param: empresa
+        }
+      );
+
+      if (empresaError) {
+        console.error('Erro ao criar empresa:', empresaError);
+        setError('Erro ao criar empresa: ' + empresaError.message);
+        setLoading(false);
+        return;
+      }
+
       setMessage('Cadastro realizado com sucesso! Você já pode fazer o login.');
+      
+      // Limpar formulário
+      setEmail('');
+      setPassword('');
+      setEmpresa('');
+      
       setTimeout(() => navigate('/login'), 2000);
+    } catch (err) {
+      console.error('Erro no cadastro:', err);
+      setError('Erro inesperado ao realizar cadastro. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

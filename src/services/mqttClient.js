@@ -33,7 +33,10 @@ function initializeMqttClient(io) {
       return console.error('❌ ID da empresa não encontrado no tópico MQTT.');
     }
 
-    io.emit('mqtt_message', messageStr);
+    // ✅ Emitir apenas para o ROOM específico da empresa
+    const roomName = `empresa_${empresaId}`;
+    io.to(roomName).emit('mqtt_message', messageStr);
+    console.log(`📤 Dados enviados para o room: ${roomName}`);
 
     try {
       const data = JSON.parse(messageStr);

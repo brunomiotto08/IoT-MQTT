@@ -34,15 +34,64 @@ function Login() {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    });
+    try {
+      // 1. Fazer login no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      });
 
-    if (error) {
-      setError(error.message);
+      if (authError) {
+        setError(authError.message);
+        setLoading(false);
+        return;
+      }
+
+      if (!authData.user) {
+        setError('Erro ao fazer login. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Buscar a empresa vinculada ao usuário
+      const { data: vinculoData, error: vinculoError } = await supabase
+        .from('usuarios_empresas')
+        .select('empresa_id, email, role, empresas(id, nome, ativa)')
+        .eq('user_id', authData.user.id)
+        .single();
+
+      if (vinculoError || !vinculoData) {
+        console.error('Erro ao buscar empresa:', vinculoError);
+        setError('Usuário não está vinculado a nenhuma empresa. Contate o administrador.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      // Verificar se a empresa está ativa
+      if (!vinculoData.empresas.ativa) {
+        setError('Empresa inativa. Contate o administrador.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      // 3. Armazenar dados da empresa no localStorage para uso posterior
+      localStorage.setItem('empresa_id', vinculoData.empresa_id);
+      localStorage.setItem('empresa_nome', vinculoData.empresas.nome);
+      localStorage.setItem('user_role', vinculoData.role);
+
+      console.log('✅ Login realizado com sucesso!');
+      console.log('👤 Usuário:', authData.user.email);
+      console.log('🏢 Empresa:', vinculoData.empresas.nome);
+      console.log('👔 Papel:', vinculoData.role);
+
+    } catch (err) {
+      console.error('Erro no login:', err);
+      setError('Erro inesperado ao fazer login. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

@@ -37,27 +37,54 @@ function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [empresaNome, setEmpresaNome] = useState('');
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('Sessão obtida:', session);
       setSession(session);
+      
+      // Carregar dados da empresa do localStorage
+      const empresaNomeLS = localStorage.getItem('empresa_nome');
+      const userRoleLS = localStorage.getItem('user_role');
+      
+      if (empresaNomeLS) setEmpresaNome(empresaNomeLS);
+      if (userRoleLS) setUserRole(userRoleLS);
     };
     getSession();
   }, []);
 
   useEffect(() => {
     const fetchInitialData = async () => {
+      if (!session) return;
+      
       try {
         console.log('Buscando dados históricos...');
         setIsLoading(true);
-        const response = await axios.get(`${API_URL}/api/leituras-test`);
+        
+        // Usar o endpoint com autenticação
+        const response = await axios.get(`${API_URL}/api/leituras`, {
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`
+          }
+        });
+        
         console.log('Dados históricos recebidos:', response.data);
         setHistoricalData(response.data || []);
         setLastUpdate(new Date());
       } catch (error) {
         console.error('Erro ao buscar dados históricos:', error);
+        
+        // Fallback para o endpoint de teste se houver erro
+        try {
+          const fallbackResponse = await axios.get(`${API_URL}/api/leituras-test`);
+          setHistoricalData(fallbackResponse.data || []);
+          setLastUpdate(new Date());
+        } catch (fallbackError) {
+          console.error('Erro no fallback:', fallbackError);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -68,6 +95,16 @@ function Dashboard() {
     // Socket connection status
     socket.on('connect', () => {
       console.log('Socket conectado');
+      
+      // Entrar no room da empresa
+      const empresaId = localStorage.getItem('empresa_id');
+      if (empresaId) {
+        console.log('🔐 Entrando no room da empresa:', empresaId);
+        socket.emit('join_empresa', empresaId);
+      } else {
+        console.log('⚠️ empresa_id não encontrado no localStorage');
+      }
+      
       setConnectionStatus('connected');
     });
 
@@ -83,11 +120,20 @@ function Dashboard() {
 
     socket.on('connected', (data) => {
       console.log('Confirmação de conexão recebida:', data);
+      if (data.empresa_id) {
+        console.log('✅ Conectado ao room da empresa:', data.empresa_id);
+      }
       setConnectionStatus('connected');
     });
 
     // Verificar status inicial da conexão
     if (socket.connected) {
+      // Se já está conectado, entrar no room da empresa
+      const empresaId = localStorage.getItem('empresa_id');
+      if (empresaId) {
+        console.log('🔐 Socket já conectado, entrando no room da empresa:', empresaId);
+        socket.emit('join_empresa', empresaId);
+      }
       setConnectionStatus('connected');
     } else {
       setConnectionStatus('connecting');
@@ -124,17 +170,37 @@ function Dashboard() {
   }, [session]);
 
   const handleLogout = async () => {
+    // Limpar dados do localStorage
+    localStorage.removeItem('empresa_id');
+    localStorage.removeItem('empresa_nome');
+    localStorage.removeItem('user_role');
+    
     await supabase.auth.signOut();
   };
 
   const handleRefresh = async () => {
+    if (!session) return;
+    
     try {
       setIsLoading(true);
-      const response = await axios.get(`${API_URL}/api/leituras-test`);
+      const response = await axios.get(`${API_URL}/api/leituras`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
       setHistoricalData(response.data || []);
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Erro ao atualizar dados:', error);
+      
+      // Fallback para o endpoint de teste
+      try {
+        const fallbackResponse = await axios.get(`${API_URL}/api/leituras-test`);
+        setHistoricalData(fallbackResponse.data || []);
+        setLastUpdate(new Date());
+      } catch (fallbackError) {
+        console.error('Erro no fallback:', fallbackError);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -228,7 +294,7 @@ function Dashboard() {
                   color: '#94a3b8',
                 }}
               >
-                Monitoramento Industrial em Tempo Real
+                {empresaNome ? `${empresaNome} • ` : ''}Monitoramento Industrial em Tempo Real
               </Typography>
             </Box>
           </Box>

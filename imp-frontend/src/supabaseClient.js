@@ -2,7 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Configurações do Supabase (temporariamente hardcoded)
+// Configurações do Supabase (usando as chaves que estavam funcionando)
 const supabaseUrl = 'https://nwifacoufwbjltsmpxdf.supabase.co';
 const supabaseAnonKey = 'sb_publishable_myZ-OwQZD_pyFEaL1wB87Q_d--wO7vp';
 
