@@ -254,5 +254,224 @@ app.put('/api/empresa', async (req, res) => {
   }
 });
 
+// --- NOVAS ROTAS V2.1 (MÁQUINAS, CICLOS E ALARMES) ---
+
+const { 
+  getMaquinasPorEmpresa, 
+  buscarCiclosPorData, 
+  getLeiturasPorCiclo,
+  buscarAlarmes,
+  reconhecerAlarme
+} = require('./services/database');
+
+// Endpoint para listar máquinas da empresa
+app.get('/api/maquinas', async (req, res) => {
+  console.log('🔍 Requisição para /api/maquinas recebida');
+  
+  if (!req.user) {
+    console.log('❌ Usuário não autenticado');
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    // Buscar a empresa_id do usuário
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      console.log('❌ Usuário não vinculado a nenhuma empresa');
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    // Buscar as máquinas da empresa
+    const maquinas = await getMaquinasPorEmpresa(vinculo.empresa_id);
+    
+    console.log(`✅ ${maquinas.length} máquina(s) encontrada(s) para empresa ${vinculo.empresa_id}`);
+    res.json(maquinas);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para buscar ciclos com filtros
+app.get('/api/ciclos', async (req, res) => {
+  console.log('🔍 Requisição para /api/ciclos recebida');
+  
+  if (!req.user) {
+    console.log('❌ Usuário não autenticado');
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { maquina_id, data_inicio, data_fim } = req.query;
+    
+    // Buscar a empresa_id do usuário
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      console.log('❌ Usuário não vinculado a nenhuma empresa');
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    // Se maquina_id foi fornecido, validar se pertence à empresa do usuário
+    if (maquina_id) {
+      const maquinas = await getMaquinasPorEmpresa(vinculo.empresa_id);
+      const maquinaValida = maquinas.find(m => m.id === maquina_id);
+      
+      if (!maquinaValida) {
+        console.log('❌ Máquina não pertence à empresa do usuário');
+        return res.status(403).json({ error: 'Máquina não pertence à sua empresa' });
+      }
+    }
+
+    // Buscar os ciclos
+    const ciclos = await buscarCiclosPorData(
+      vinculo.empresa_id, 
+      maquina_id, 
+      data_inicio, 
+      data_fim
+    );
+    
+    console.log(`✅ ${ciclos.length} ciclo(s) encontrado(s)`);
+    res.json(ciclos);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para buscar leituras de um ciclo específico
+app.get('/api/ciclos/:id/leituras', async (req, res) => {
+  console.log('🔍 Requisição para /api/ciclos/:id/leituras recebida');
+  
+  if (!req.user) {
+    console.log('❌ Usuário não autenticado');
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { id } = req.params;
+    
+    // Buscar a empresa_id do usuário
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      console.log('❌ Usuário não vinculado a nenhuma empresa');
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    // Validar se o ciclo pertence à empresa do usuário
+    const ciclos = await buscarCiclosPorData(vinculo.empresa_id);
+    const cicloValido = ciclos.find(c => c.id === id);
+    
+    if (!cicloValido) {
+      console.log('❌ Ciclo não encontrado ou não pertence à empresa');
+      return res.status(404).json({ error: 'Ciclo não encontrado' });
+    }
+
+    // Buscar as leituras do ciclo
+    const leituras = await getLeiturasPorCiclo(id, vinculo.empresa_id);
+    
+    console.log(`✅ ${leituras.length} leitura(s) encontrada(s) para ciclo ${id}`);
+    res.json(leituras);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para buscar alarmes
+app.get('/api/alarmes', async (req, res) => {
+  console.log('🔍 Requisição para /api/alarmes recebida');
+  
+  if (!req.user) {
+    console.log('❌ Usuário não autenticado');
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { maquina_id, reconhecido, prioridade } = req.query;
+    
+    // Buscar a empresa_id do usuário
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      console.log('❌ Usuário não vinculado a nenhuma empresa');
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    // Preparar filtros
+    const filtros = {};
+    if (maquina_id) filtros.maquina_id = maquina_id;
+    if (reconhecido !== undefined) filtros.reconhecido = reconhecido === 'true';
+    if (prioridade) filtros.prioridade = prioridade;
+
+    // Buscar os alarmes
+    const alarmes = await buscarAlarmes(vinculo.empresa_id, filtros);
+    
+    console.log(`✅ ${alarmes.length} alarme(s) encontrado(s)`);
+    res.json(alarmes);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para reconhecer um alarme
+app.post('/api/alarmes/:id/reconhecer', async (req, res) => {
+  console.log('🔍 Requisição para reconhecer alarme recebida');
+  
+  if (!req.user) {
+    console.log('❌ Usuário não autenticado');
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { id } = req.params;
+    
+    // Buscar a empresa_id do usuário
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      console.log('❌ Usuário não vinculado a nenhuma empresa');
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    // Reconhecer o alarme
+    const alarmeAtualizado = await reconhecerAlarme(id, req.user.id, vinculo.empresa_id);
+    
+    if (!alarmeAtualizado) {
+      console.log('❌ Alarme não encontrado ou não pertence à empresa');
+      return res.status(404).json({ error: 'Alarme não encontrado' });
+    }
+    
+    console.log(`✅ Alarme ${id} reconhecido por usuário ${req.user.id}`);
+    res.json(alarmeAtualizado);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 server.listen(PORT, () => console.log(`🚀 Servidor backend rodando na porta http://localhost:${PORT}`));

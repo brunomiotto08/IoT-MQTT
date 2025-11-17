@@ -11,7 +11,119 @@ import {
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined';
 import TrendingDownOutlined from '@mui/icons-material/TrendingDownOutlined';
 
-function DataCard({ title, value, unit, icon, color = 'primary', isStatus = false }) {
+function DataCard({ title, value, unit, icon, color = 'primary', isStatus = false, threshold = null }) {
+  // Carregar thresholds personalizados do localStorage
+  const loadThresholds = () => {
+    try {
+      const savedConfig = localStorage.getItem('imp_thresholds');
+      if (savedConfig) {
+        return JSON.parse(savedConfig);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar thresholds:', err);
+    }
+    
+    // Padrão
+    return {
+      temperatura: { atenção: 90, critico: 100 },
+      vibracao: { atenção: 5, critico: 8 }
+    };
+  };
+
+  const thresholds = loadThresholds();
+
+  // Determinar cor dinâmica baseada em threshold
+  const getDynamicColor = () => {
+    if (!threshold || value === null || value === undefined) return color;
+    
+    const numValue = parseFloat(value);
+    
+    // Temperatura
+    if (title.toLowerCase().includes('temperatura')) {
+      // Verificar MÁXIMOS
+      if (numValue >= thresholds.temperatura.critico) return 'error';
+      if (numValue >= thresholds.temperatura.atenção) return 'warning';
+      
+      // Verificar MÍNIMOS
+      if (numValue <= 0) return 'error';    // Crítico baixo
+      if (numValue <= 10) return 'info';    // Azul para temperatura muito baixa
+      
+      // Normal
+      if (numValue >= 70) return 'success';
+      return 'primary';
+    }
+    
+    // Vibração
+    if (title.toLowerCase().includes('vibra')) {
+      // Verificar MÁXIMOS
+      if (numValue >= thresholds.vibracao.critico) return 'error';
+      if (numValue >= thresholds.vibracao.atenção) return 'warning';
+      
+      // Verificar MÍNIMOS
+      if (numValue <= 0.1) return 'error';  // Crítico baixo (máquina parada?)
+      if (numValue <= 0.5) return 'info';   // Azul para vibração muito baixa
+      
+      // Normal
+      if (numValue >= 3) return 'success';
+      return 'primary';
+    }
+    
+    return color;
+  };
+  
+  const dynamicColor = getDynamicColor();
+  const isAlert = dynamicColor === 'error' || dynamicColor === 'warning' || dynamicColor === 'info';
+  
+  // Obter cores RGB baseadas no estado
+  const getColorValues = () => {
+    switch(dynamicColor) {
+      case 'error':
+        return {
+          rgb: '239, 68, 68',
+          hex: '#ef4444',
+          light: '#f87171',
+          glow: 'rgba(239, 68, 68, 0.6)'
+        };
+      case 'warning':
+        return {
+          rgb: '245, 158, 11',
+          hex: '#f59e0b',
+          light: '#fbbf24',
+          glow: 'rgba(245, 158, 11, 0.6)'
+        };
+      case 'info':
+        return {
+          rgb: '59, 130, 246',
+          hex: '#3b82f6',
+          light: '#60a5fa',
+          glow: 'rgba(59, 130, 246, 0.6)'
+        };
+      case 'success':
+        return {
+          rgb: '16, 185, 129',
+          hex: '#10b981',
+          light: '#34d399',
+          glow: 'rgba(16, 185, 129, 0.4)'
+        };
+      case 'secondary':
+        return {
+          rgb: '100, 100, 100',
+          hex: '#999999',
+          light: '#bbbbbb',
+          glow: 'rgba(100, 100, 100, 0.4)'
+        };
+      default: // primary
+        return {
+          rgb: '120, 120, 120',
+          hex: '#888888',
+          light: '#aaaaaa',
+          glow: 'rgba(120, 120, 120, 0.4)'
+        };
+    }
+  };
+  
+  const colors = getColorValues();
+  
   const getStatusChip = (status) => {
     if (!isStatus || !status) return null;
     
@@ -31,7 +143,7 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
   const getValueColor = () => {
     if (isStatus) return 'text.primary';
     if (value === null || value === undefined) return 'text.secondary';
-    return `${color}.main`;
+    return `${dynamicColor}.main`;
   };
 
   return (
@@ -44,11 +156,28 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
           background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%)',
           backdropFilter: 'blur(20px)',
           border: '2px solid',
-          borderColor: 'rgba(80, 80, 80, 0.3)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+          borderColor: isAlert 
+            ? `rgba(${colors.rgb}, 0.7)`
+            : 'rgba(80, 80, 80, 0.3)',
+          boxShadow: isAlert
+            ? `0 8px 32px rgba(${colors.rgb}, 0.5), 0 0 60px rgba(${colors.rgb}, 0.4)`
+            : '0 8px 32px rgba(0, 0, 0, 0.6)',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'relative',
           overflow: 'hidden',
+          animation: isAlert ? 'alertPulse 2s ease-in-out infinite' : 'none',
+          '@keyframes alertPulse': {
+            '0%, 100%': {
+              boxShadow: isAlert
+                ? `0 8px 32px rgba(${colors.rgb}, 0.5)`
+                : '0 8px 32px rgba(0, 0, 0, 0.6)',
+            },
+            '50%': {
+              boxShadow: isAlert
+                ? `0 8px 45px rgba(${colors.rgb}, 0.9), 0 0 80px rgba(${colors.rgb}, 0.7)`
+                : '0 8px 32px rgba(0, 0, 0, 0.6)',
+            }
+          },
           '&::before': {
             content: '""',
             position: 'absolute',
@@ -56,13 +185,22 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
             left: 0,
             right: 0,
             height: '3px',
-            background: `linear-gradient(90deg, ${color === 'primary' ? '#888888' : color === 'secondary' ? '#999999' : color === 'success' ? '#10b981' : color === 'warning' ? '#f59e0b' : '#ef4444'}, ${color === 'primary' ? '#aaaaaa' : color === 'secondary' ? '#bbbbbb' : color === 'success' ? '#34d399' : color === 'warning' ? '#fbbf24' : '#f87171'})`,
-            opacity: 0.6,
+            background: `linear-gradient(90deg, ${colors.hex}, ${colors.light})`,
+            opacity: isAlert ? 1 : 0.6,
+            animation: isAlert ? 'glow 1.5s ease-in-out infinite' : 'none',
+          },
+          '@keyframes glow': {
+            '0%, 100%': { opacity: 0.6 },
+            '50%': { opacity: 1 }
           },
           '&:hover': {
             transform: 'translateY(-8px) scale(1.02)',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
-            borderColor: 'rgba(120, 120, 120, 0.5)',
+            boxShadow: isAlert
+              ? `0 20px 60px rgba(${colors.rgb}, 0.7)`
+              : '0 20px 60px rgba(0, 0, 0, 0.8)',
+            borderColor: isAlert
+              ? `rgba(${colors.rgb}, 0.9)`
+              : 'rgba(120, 120, 120, 0.5)',
           }
         }}
       >
@@ -122,7 +260,7 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
                 color: getValueColor(),
                 fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
                 lineHeight: 1,
-                textShadow: `0 0 40px ${color === 'primary' ? 'rgba(139, 92, 246, 0.4)' : color === 'secondary' ? 'rgba(6, 182, 212, 0.4)' : color === 'success' ? 'rgba(16, 185, 129, 0.4)' : color === 'warning' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                textShadow: `0 0 40px ${colors.glow}`,
               }}
             >
               {value !== null && value !== undefined ? (
@@ -181,10 +319,10 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
                   width: 10,
                   height: 10,
                   borderRadius: '50%',
-                  bgcolor: `${color}.main`,
+                  bgcolor: colors.hex,
                   mr: 1.5,
                   animation: 'pulse 2s ease-in-out infinite',
-                  boxShadow: '0 0 15px rgba(255, 255, 255, 0.4)',
+                  boxShadow: `0 0 15px ${colors.glow}`,
                 }}
               />
               <Typography 

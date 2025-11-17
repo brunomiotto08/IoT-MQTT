@@ -6,6 +6,9 @@ import { supabase } from './supabaseClient';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import Dashboard from './components/Dashboard';
+import Historico from './components/Historico';
+import Notificacoes from './components/Notificacoes';
+import Configuracoes from './components/Configuracoes';
 import { Box, CircularProgress } from '@mui/material';
 import theme from './theme';
 
@@ -44,6 +47,9 @@ function App() {
         <Route path="/" element={!session ? <Navigate to="/login" /> : <Dashboard />} />
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/signup" element={!session ? <SignUp /> : <Navigate to="/" />} />
+        <Route path="/historico" element={!session ? <Navigate to="/login" /> : <Historico />} />
+        <Route path="/notificacoes" element={!session ? <Navigate to="/login" /> : <Notificacoes />} />
+        <Route path="/configuracoes" element={!session ? <Navigate to="/login" /> : <Configuracoes />} />
       </Routes>
     </ThemeProvider>
   );

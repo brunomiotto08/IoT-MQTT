@@ -135,7 +135,7 @@ const lineChartOptions = {
   }
 };
 
-function LineChart({ series }) {
+function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', color = '#8b5cf6' }) {
   const dataPoints = series[0]?.data?.length || 0;
   const latestValue = series[0]?.data?.[dataPoints - 1]?.[1] || 0;
   
@@ -150,6 +150,60 @@ function LineChart({ series }) {
   };
 
   const trendDirection = getTrendDirection();
+  
+  // Criar opções dinâmicas baseadas nos props
+  const dynamicOptions = {
+    ...lineChartOptions,
+    colors: [color],
+    chart: {
+      ...lineChartOptions.chart,
+      dropShadow: {
+        ...lineChartOptions.chart.dropShadow,
+        color: color,
+      }
+    },
+    yaxis: {
+      ...lineChartOptions.yaxis,
+      title: {
+        text: `${series[0]?.name || title} (${unit})`,
+        style: {
+          color: color,
+          fontSize: '14px',
+          fontWeight: 700
+        }
+      }
+    },
+    tooltip: {
+      ...lineChartOptions.tooltip,
+      custom: function({ series: s, seriesIndex, dataPointIndex, w }) {
+        const value = s[seriesIndex][dataPointIndex];
+        const timestamp = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
+        const displayValue = unit === 'unidades' ? value.toFixed(0) : value.toFixed(1);
+        return `<div style="background: rgba(15, 15, 25, 0.95); backdrop-filter: blur(20px); padding: 12px 16px; border-radius: 8px; border: 1px solid ${color}40;">
+          <div style="color: ${color}; font-weight: 700; font-size: 18px; margin-bottom: 4px;">${displayValue} ${unit}</div>
+          <div style="color: #94a3b8; font-size: 12px;">${timestamp.toLocaleString('pt-BR')}</div>
+        </div>`;
+      }
+    },
+    markers: {
+      ...lineChartOptions.markers,
+      colors: [color],
+      strokeColors: `${color}50`
+    },
+    fill: {
+      type: 'gradient',
+      gradient: {
+        shade: 'dark',
+        type: 'vertical',
+        shadeIntensity: 0.4,
+        gradientToColors: [color],
+        inverseColors: false,
+        opacityFrom: 0.6,
+        opacityTo: 0.05,
+        stops: [0, 100]
+      }
+    }
+  };
 
   return (
     <Card 
@@ -204,7 +258,7 @@ function LineChart({ series }) {
                   letterSpacing: '-0.01em',
                 }}
               >
-                Histórico de Temperatura
+                {title}
               </Typography>
             </Box>
             
@@ -242,14 +296,14 @@ function LineChart({ series }) {
               component="div"
               sx={{ 
                 fontWeight: 800,
-                background: 'linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%)',
+                background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 mb: 0.5,
-                textShadow: '0 0 30px rgba(139, 92, 246, 0.3)',
+                textShadow: `0 0 30px ${color}50`,
               }}
             >
-              {latestValue.toFixed(1)}°C
+              {unit === 'unidades' ? latestValue.toFixed(0) : latestValue.toFixed(1)} {unit}
             </Typography>
             <Typography 
               variant="body2" 
@@ -261,7 +315,7 @@ function LineChart({ series }) {
           </Box>
           
           <Chart 
-            options={lineChartOptions} 
+            options={dynamicOptions} 
             series={series} 
             type="area" 
             height={340} 
