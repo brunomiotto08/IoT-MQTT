@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box, Chip } from '@mui/material';
 import Chart from 'react-apexcharts';
 import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined';
@@ -139,6 +139,29 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
   const dataPoints = series[0]?.data?.length || 0;
   const latestValue = series[0]?.data?.[dataPoints - 1]?.[1] || 0;
   
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [prevLatestValue, setPrevLatestValue] = useState(latestValue);
+
+  // Detectar mudanças no valor mais recente
+  useEffect(() => {
+    if (latestValue !== prevLatestValue && latestValue !== 0) {
+      setIsUpdating(true);
+      
+      const timer = setTimeout(() => {
+        setPrevLatestValue(latestValue);
+        setIsUpdating(false);
+      }, 400); // Duração do fade out
+      
+      return () => clearTimeout(timer);
+    }
+  }, [latestValue, prevLatestValue]);
+  
+  // Detectar se há múltiplas séries e definir cores específicas
+  const isMultipleSeries = series.length > 1;
+  const chartColors = isMultipleSeries 
+    ? ['#f97316', '#1e40af'] // Laranja para Envelope, Azul para Saco de Ar
+    : [color];
+  
   const getTrendDirection = () => {
     if (dataPoints < 2) return 'neutral';
     const recent = series[0]?.data?.slice(-5) || [];
@@ -154,20 +177,40 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
   // Criar opções dinâmicas baseadas nos props
   const dynamicOptions = {
     ...lineChartOptions,
-    colors: [color],
+    colors: chartColors,
     chart: {
       ...lineChartOptions.chart,
       dropShadow: {
         ...lineChartOptions.chart.dropShadow,
-        color: color,
+        color: chartColors[0],
+        enabled: !isMultipleSeries
       }
     },
+    stroke: {
+      ...lineChartOptions.stroke,
+      width: isMultipleSeries ? 3 : 4
+    },
+    legend: isMultipleSeries ? {
+      show: true,
+      position: 'top',
+      horizontalAlign: 'center',
+      fontSize: '14px',
+      fontWeight: 700,
+      labels: {
+        colors: '#ffffff'
+      },
+      markers: {
+        width: 12,
+        height: 12,
+        radius: 6
+      }
+    } : { show: false },
     yaxis: {
       ...lineChartOptions.yaxis,
       title: {
-        text: `${series[0]?.name || title} (${unit})`,
+        text: isMultipleSeries ? `Pressão (${unit})` : `${series[0]?.name || title} (${unit})`,
         style: {
-          color: color,
+          color: isMultipleSeries ? '#ffffff' : color,
           fontSize: '14px',
           fontWeight: 700
         }
@@ -178,17 +221,20 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
       custom: function({ series: s, seriesIndex, dataPointIndex, w }) {
         const value = s[seriesIndex][dataPointIndex];
         const timestamp = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
-        const displayValue = unit === 'unidades' ? value.toFixed(0) : value.toFixed(1);
-        return `<div style="background: rgba(15, 15, 25, 0.95); backdrop-filter: blur(20px); padding: 12px 16px; border-radius: 8px; border: 1px solid ${color}40;">
-          <div style="color: ${color}; font-weight: 700; font-size: 18px; margin-bottom: 4px;">${displayValue} ${unit}</div>
+        const displayValue = unit === 'unidades' ? value.toFixed(0) : value.toFixed(2);
+        const seriesColor = chartColors[seriesIndex];
+        const seriesName = w.config.series[seriesIndex].name;
+        return `<div style="background: rgba(15, 15, 25, 0.95); backdrop-filter: blur(20px); padding: 12px 16px; border-radius: 8px; border: 1px solid ${seriesColor}40;">
+          ${isMultipleSeries ? `<div style="color: ${seriesColor}; font-weight: 600; font-size: 13px; margin-bottom: 4px;">${seriesName}</div>` : ''}
+          <div style="color: ${seriesColor}; font-weight: 700; font-size: 18px; margin-bottom: 4px;">${displayValue} ${unit}</div>
           <div style="color: #94a3b8; font-size: 12px;">${timestamp.toLocaleString('pt-BR')}</div>
         </div>`;
       }
     },
     markers: {
       ...lineChartOptions.markers,
-      colors: [color],
-      strokeColors: `${color}50`
+      colors: chartColors,
+      strokeColors: chartColors.map(c => `${c}50`)
     },
     fill: {
       type: 'gradient',
@@ -196,12 +242,16 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
         shade: 'dark',
         type: 'vertical',
         shadeIntensity: 0.4,
-        gradientToColors: [color],
+        gradientToColors: chartColors,
         inverseColors: false,
-        opacityFrom: 0.6,
+        opacityFrom: isMultipleSeries ? 0.4 : 0.6,
         opacityTo: 0.05,
         stops: [0, 100]
       }
+    },
+    grid: {
+      ...lineChartOptions.grid,
+      borderColor: isMultipleSeries ? 'rgba(30, 64, 175, 0.15)' : 'rgba(139, 92, 246, 0.1)'
     }
   };
 
@@ -262,7 +312,7 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
               </Typography>
             </Box>
             
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
               <Chip 
                 icon={<AccessTimeOutlined />}
                 label={`${dataPoints} leituras`}
@@ -272,6 +322,8 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
                 sx={{ 
                   fontWeight: 700,
                   borderWidth: 2,
+                  mx: 1.5,
+                  my: 1,
                 }}
               />
               
@@ -284,6 +336,8 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
                   variant="filled"
                   sx={{ 
                     fontWeight: 700,
+                    mx: 1.5,
+                    my: 1,
                   }}
                 />
               )}
@@ -291,27 +345,76 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
           </Box>
           
           <Box sx={{ mb: 3, textAlign: 'center' }}>
-            <Typography 
-              variant="h3" 
-              component="div"
-              sx={{ 
-                fontWeight: 800,
-                background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                mb: 0.5,
-                textShadow: `0 0 30px ${color}50`,
-              }}
-            >
-              {unit === 'unidades' ? latestValue.toFixed(0) : latestValue.toFixed(1)} {unit}
-            </Typography>
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
-              sx={{ fontSize: '0.875rem', fontWeight: 600 }}
-            >
-              Última leitura
-            </Typography>
+            {isMultipleSeries ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', gap: 4, flexWrap: 'wrap' }}>
+                {series.map((s, idx) => {
+                  const lastVal = s.data?.[s.data.length - 1]?.[1] || 0;
+                  return (
+                    <Box key={idx}>
+                      <Typography 
+                        variant="h3" 
+                        component="div"
+                        sx={{ 
+                          fontWeight: 800,
+                          color: chartColors[idx],
+                          mb: 0.5,
+                          textShadow: `0 0 30px ${chartColors[idx]}50`,
+                          transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out',
+                          opacity: isUpdating ? 0 : 1,
+                          transform: isUpdating ? 'translateY(-8px)' : 'translateY(0)',
+                        }}
+                      >
+                        {lastVal.toFixed(2)} {unit}
+                      </Typography>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontSize: '0.875rem', 
+                          fontWeight: 600,
+                          color: chartColors[idx],
+                          transition: 'opacity 0.4s ease-in-out',
+                          opacity: isUpdating ? 0 : 1,
+                        }}
+                      >
+                        {s.name}
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            ) : (
+              <>
+                <Typography 
+                  variant="h3" 
+                  component="div"
+                  sx={{ 
+                    fontWeight: 800,
+                    background: `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`,
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    mb: 0.5,
+                    textShadow: `0 0 30px ${color}50`,
+                    transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out',
+                    opacity: isUpdating ? 0 : 1,
+                    transform: isUpdating ? 'translateY(-8px)' : 'translateY(0)',
+                  }}
+                >
+                  {unit === 'unidades' ? latestValue.toFixed(0) : latestValue.toFixed(1)} {unit}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ 
+                    fontSize: '0.875rem', 
+                    fontWeight: 600, 
+                    transition: 'opacity 0.4s ease-in-out',
+                    opacity: isUpdating ? 0 : 1,
+                  }}
+                >
+                  Última leitura
+                </Typography>
+              </>
+            )}
           </Box>
           
           <Chart 

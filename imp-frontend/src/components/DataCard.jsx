@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -12,6 +12,22 @@ import TrendingUpOutlined from '@mui/icons-material/TrendingUpOutlined';
 import TrendingDownOutlined from '@mui/icons-material/TrendingDownOutlined';
 
 function DataCard({ title, value, unit, icon, color = 'primary', isStatus = false, threshold = null }) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [prevValue, setPrevValue] = useState(value);
+
+  // Detectar mudanças no valor e adicionar animação
+  useEffect(() => {
+    if (value !== prevValue && value !== null && value !== undefined) {
+      setIsUpdating(true);
+      
+      const timer = setTimeout(() => {
+        setPrevValue(value);
+        setIsUpdating(false);
+      }, 400); // Duração do fade out
+      
+      return () => clearTimeout(timer);
+    }
+  }, [value, prevValue]);
   // Carregar thresholds personalizados do localStorage
   const loadThresholds = () => {
     try {
@@ -261,6 +277,9 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
                 fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
                 lineHeight: 1,
                 textShadow: `0 0 40px ${colors.glow}`,
+                transition: 'opacity 0.4s ease-in-out, transform 0.4s ease-in-out',
+                opacity: isUpdating ? 0 : 1,
+                transform: isUpdating ? 'translateY(-10px)' : 'translateY(0)',
               }}
             >
               {value !== null && value !== undefined ? (
@@ -276,6 +295,8 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
                         fontWeight: 700,
                         fontFamily: '"Poppins", sans-serif',
                         color: '#94a3b8',
+                        transition: 'opacity 0.4s ease-in-out',
+                        opacity: isUpdating ? 0 : 1,
                       }}
                     >
                       {unit}

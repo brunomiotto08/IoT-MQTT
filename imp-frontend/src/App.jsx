@@ -6,9 +6,11 @@ import { supabase } from './supabaseClient';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
 import Dashboard from './components/Dashboard';
-import Historico from './components/Historico';
+import Ciclos from './components/Ciclos';
 import Notificacoes from './components/Notificacoes';
 import Configuracoes from './components/Configuracoes';
+import Registros from './components/Registros';
+import StatusMaquina from './components/StatusMaquina';
 import { Box, CircularProgress } from '@mui/material';
 import theme from './theme';
 
@@ -47,9 +49,11 @@ function App() {
         <Route path="/" element={!session ? <Navigate to="/login" /> : <Dashboard />} />
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/signup" element={!session ? <SignUp /> : <Navigate to="/" />} />
-        <Route path="/historico" element={!session ? <Navigate to="/login" /> : <Historico />} />
+        <Route path="/ciclos" element={!session ? <Navigate to="/login" /> : <Ciclos />} />
         <Route path="/notificacoes" element={!session ? <Navigate to="/login" /> : <Notificacoes />} />
         <Route path="/configuracoes" element={!session ? <Navigate to="/login" /> : <Configuracoes />} />
+        <Route path="/registros" element={!session ? <Navigate to="/login" /> : <Registros />} />
+        <Route path="/status-maquina" element={!session ? <Navigate to="/login" /> : <StatusMaquina />} />
       </Routes>
     </ThemeProvider>
   );

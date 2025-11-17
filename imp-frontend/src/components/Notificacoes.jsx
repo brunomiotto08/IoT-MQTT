@@ -134,6 +134,44 @@ function Notificacoes() {
     }
   };
 
+  // Marcar todas como lidas
+  const handleMarcarTodasComoLidas = async () => {
+    if (!session) return;
+    
+    const naoReconhecidas = notificacoes.filter(n => !n.reconhecido);
+    
+    if (naoReconhecidas.length === 0) {
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      
+      // Reconhecer todas as notificações não reconhecidas
+      await Promise.all(
+        naoReconhecidas.map(notificacao =>
+          axios.post(
+            `${API_URL}/api/alarmes/${notificacao.id}/reconhecer`,
+            {},
+            {
+              headers: {
+                'Authorization': `Bearer ${session.access_token}`
+              }
+            }
+          )
+        )
+      );
+      
+      // Atualizar lista
+      await fetchNotificacoes();
+    } catch (err) {
+      console.error('Erro ao marcar todas como lidas:', err);
+      setError('Erro ao marcar todas como lidas: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Atualizar notificações quando filtros mudarem
   useEffect(() => {
     if (session) {
@@ -219,10 +257,38 @@ function Notificacoes() {
 
       <Container maxWidth="xl" sx={{ py: 4 }}>
         {/* Filtros */}
-        <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Filtros
-          </Typography>
+        <Paper elevation={3} sx={{ p: 3, mb: 3, borderRadius: 3 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              Filtros
+            </Typography>
+            {notificacoesNaoReconhecidas > 0 && (
+              <Button
+                variant="contained"
+                color="success"
+                size="large"
+                startIcon={<CheckCircleIcon />}
+                onClick={handleMarcarTodasComoLidas}
+                disabled={loading}
+                sx={{ 
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  borderRadius: 2,
+                  boxShadow: '0 4px 12px rgba(76, 175, 80, 0.4)',
+                  background: 'linear-gradient(135deg, #66bb6a 0%, #4caf50 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #4caf50 0%, #43a047 100%)',
+                    boxShadow: '0 6px 16px rgba(76, 175, 80, 0.5)',
+                    transform: 'translateY(-2px)',
+                  },
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                ✓ Marcar Todas como Lidas ({notificacoesNaoReconhecidas})
+              </Button>
+            )}
+          </Box>
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
               <FormControl fullWidth>
@@ -302,84 +368,109 @@ function Notificacoes() {
         )}
 
         {!loading && notificacoes.length > 0 && (
-          <Grid container spacing={2}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {notificacoes.map((notificacao) => (
-              <Grid item xs={12} md={6} key={notificacao.id}>
-                <Card 
-                  elevation={3}
-                  sx={{
-                    borderLeft: 6,
-                    borderColor: getPrioridadeColor(notificacao.prioridade),
-                    opacity: notificacao.reconhecido ? 0.7 : 1
-                  }}
-                >
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Box sx={{ 
-                        color: getPrioridadeColor(notificacao.prioridade),
-                        mr: 2 
-                      }}>
-                        {getPrioridadeIcon(notificacao.prioridade)}
-                      </Box>
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" component="div">
-                          {notificacao.maquina_nome}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatarData(notificacao.created_at)}
-                        </Typography>
-                      </Box>
-                      <Chip
-                        label={notificacao.prioridade}
-                        size="small"
-                        sx={{
-                          backgroundColor: getPrioridadeColor(notificacao.prioridade),
-                          color: 'white',
-                          fontWeight: 'bold'
-                        }}
-                      />
+              <Card 
+                key={notificacao.id}
+                elevation={3}
+                sx={{
+                  borderLeft: 6,
+                  borderColor: getPrioridadeColor(notificacao.prioridade),
+                  borderRadius: 2,
+                  opacity: notificacao.reconhecido ? 0.7 : 1,
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateX(5px)',
+                    boxShadow: 6
+                  }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                    {/* Ícone de Prioridade */}
+                    <Box sx={{ 
+                      minWidth: 60,
+                      height: 60,
+                      borderRadius: 2,
+                      background: `${getPrioridadeColor(notificacao.prioridade)}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: getPrioridadeColor(notificacao.prioridade),
+                      fontSize: 32,
+                    }}>
+                      {getPrioridadeIcon(notificacao.prioridade)}
                     </Box>
-
-                    <Typography variant="body1" sx={{ mb: 2 }}>
-                      {notificacao.mensagem}
-                    </Typography>
-
-                    {notificacao.reconhecido && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
-                        <CheckCircleIcon sx={{ fontSize: 16, mr: 1, color: 'success.main' }} />
-                        <Typography variant="caption" color="success.main">
-                          Reconhecido em {formatarData(notificacao.reconhecido_em)}
-                        </Typography>
+                    
+                    {/* Conteúdo Principal */}
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
+                        <Box>
+                          <Typography 
+                            variant="h6" 
+                            component="div" 
+                            sx={{ fontWeight: 700, mb: 0.5 }}
+                          >
+                            {notificacao.maquina_nome}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
+                            📅 {formatarData(notificacao.created_at)}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={notificacao.prioridade.toUpperCase()}
+                          size="medium"
+                          sx={{
+                            backgroundColor: getPrioridadeColor(notificacao.prioridade),
+                            color: 'white',
+                            fontWeight: 800,
+                            letterSpacing: 1,
+                            minWidth: 100
+                          }}
+                        />
                       </Box>
-                    )}
-                  </CardContent>
 
-                  <CardActions>
-                    {!notificacao.reconhecido && (
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="primary"
-                        startIcon={<CheckCircleIcon />}
-                        onClick={() => handleReconhecer(notificacao.id)}
-                      >
-                        Reconhecer
-                      </Button>
-                    )}
-                    {notificacao.reconhecido && (
-                      <Chip
-                        icon={<CheckCircleIcon />}
-                        label="Reconhecido"
-                        color="success"
-                        size="small"
-                        variant="outlined"
-                      />
-                    )}
-                  </CardActions>
-                </Card>
-              </Grid>
+                      <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.6 }}>
+                        {notificacao.mensagem}
+                      </Typography>
+
+                      {/* Status de Reconhecimento */}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {notificacao.reconhecido ? (
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <CheckCircleIcon sx={{ fontSize: 18, mr: 1, color: 'success.main' }} />
+                            <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
+                              ✅ Reconhecido em {formatarData(notificacao.reconhecido_em)}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <WarningIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                            <Typography variant="body2" color="warning.main" sx={{ fontWeight: 600 }}>
+                              ⚠️ Aguardando reconhecimento
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        {/* Botão de Ação */}
+                        {!notificacao.reconhecido && (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<CheckCircleIcon />}
+                            onClick={() => handleReconhecer(notificacao.id)}
+                            sx={{ fontWeight: 700 }}
+                          >
+                            Reconhecer
+                          </Button>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
             ))}
-          </Grid>
+          </Box>
         )}
       </Container>
     </Box>

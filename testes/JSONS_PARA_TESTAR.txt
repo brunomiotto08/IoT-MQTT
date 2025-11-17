@@ -1,0 +1,460 @@
+═══════════════════════════════════════════════════════════════
+   20 JSONs PRONTOS PARA TESTAR - Sistema I.M.P. V2.2
+═══════════════════════════════════════════════════════════════
+
+📋 INSTRUÇÕES:
+1. Copie um JSON abaixo
+2. Envie via MQTT para: empresas/{empresa_id}/maquinas/{maquina_id}/sensores
+3. Ou use o backend para simular
+4. Observe as mudanças no Dashboard, Registros e Status da Máquina
+
+═══════════════════════════════════════════════════════════════
+
+✅ JSON 1 - OPERAÇÃO NORMAL
+Tudo funcionando perfeitamente
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 75.5,
+  "vibracao": 2.3,
+  "status": "ativo",
+  "pecas_produzidas": 150,
+  "pressao_envelope": 3.2,
+  "pressao_saco_ar": 4.1,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🔥 JSON 2 - TEMPERATURA CRÍTICA
+Sistema em alerta, temperatura muito alta!
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 95.8,
+  "vibracao": 3.7,
+  "status": "ativo",
+  "pecas_produzidas": 245,
+  "pressao_envelope": 4.5,
+  "pressao_saco_ar": 5.2,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🛑 JSON 3 - MÁQUINA DESLIGADA
+Em manutenção, todos os componentes off
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 25.3,
+  "vibracao": 0.1,
+  "status": "parado",
+  "pecas_produzidas": 450,
+  "pressao_envelope": 0.0,
+  "pressao_saco_ar": 0.0,
+  "status_motor_ventilador": "desligado",
+  "status_valvula_entrada_autoclave": "fechada",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "fechada",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "fechada",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+❌ JSON 4 - ERRO EM VÁLVULAS
+Falhas detectadas em múltiplas válvulas
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 82.1,
+  "vibracao": 4.5,
+  "status": "erro",
+  "pecas_produzidas": 320,
+  "pressao_envelope": 1.2,
+  "pressao_saco_ar": 6.8,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "erro",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "erro",
+  "status_valvula_entrada_envelope": "erro",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🚀 JSON 5 - PRODUÇÃO ALTA
+Pico de trabalho, alta performance
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 88.3,
+  "vibracao": 3.2,
+  "status": "ativo",
+  "pecas_produzidas": 785,
+  "pressao_envelope": 4.8,
+  "pressao_saco_ar": 5.5,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ JSON 6 - PRESSÕES BAIXAS
+Possível vazamento no sistema
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 68.5,
+  "vibracao": 1.8,
+  "status": "ativo",
+  "pecas_produzidas": 195,
+  "pressao_envelope": 0.8,
+  "pressao_saco_ar": 1.2,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🌡️ JSON 7 - INÍCIO DE OPERAÇÃO
+Aquecimento gradual
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 45.2,
+  "vibracao": 1.5,
+  "status": "ativo",
+  "pecas_produzidas": 12,
+  "pressao_envelope": 2.1,
+  "pressao_saco_ar": 2.8,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "fechada",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+💨 JSON 8 - CICLO DE DESCARGA
+Válvulas de descarga abertas
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 79.6,
+  "vibracao": 2.7,
+  "status": "ativo",
+  "pecas_produzidas": 530,
+  "pressao_envelope": 2.5,
+  "pressao_saco_ar": 3.3,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "fechada",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "fechada",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "fechada",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+💰 JSON 9 - MODO ECONÔMICO
+Baixo consumo, parâmetros reduzidos
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 62.3,
+  "vibracao": 1.2,
+  "status": "ativo",
+  "pecas_produzidas": 88,
+  "pressao_envelope": 2.0,
+  "pressao_saco_ar": 2.5,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "fechada",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+📳 JSON 10 - VIBRAÇÃO ALTA
+Desbalanceamento, necessita ajuste
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 73.8,
+  "vibracao": 5.8,
+  "status": "ativo",
+  "pecas_produzidas": 412,
+  "pressao_envelope": 3.5,
+  "pressao_saco_ar": 4.2,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+⚡ JSON 11 - TESTE DE LIMITE
+Máximo operacional
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 98.5,
+  "vibracao": 4.9,
+  "status": "ativo",
+  "pecas_produzidas": 999,
+  "pressao_envelope": 6.0,
+  "pressao_saco_ar": 7.2,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+❄️ JSON 12 - RESFRIAMENTO
+Pós operação, sistema esfriando
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 55.7,
+  "vibracao": 0.8,
+  "status": "parado",
+  "pecas_produzidas": 680,
+  "pressao_envelope": 1.5,
+  "pressao_saco_ar": 2.0,
+  "status_motor_ventilador": "desligado",
+  "status_valvula_entrada_autoclave": "fechada",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "fechada",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "fechada",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+💔 JSON 13 - MOTOR EM FALHA
+Motor ventilador com erro crítico
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 92.3,
+  "vibracao": 6.2,
+  "status": "erro",
+  "pecas_produzidas": 367,
+  "pressao_envelope": 3.8,
+  "pressao_saco_ar": 4.6,
+  "status_motor_ventilador": "erro",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🌙 JSON 14 - OPERAÇÃO NOTURNA
+Turno noturno, regime reduzido
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 65.1,
+  "vibracao": 1.6,
+  "status": "ativo",
+  "pecas_produzidas": 205,
+  "pressao_envelope": 2.3,
+  "pressao_saco_ar": 3.0,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "fechada",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🔄 JSON 15 - CICLO COMPLETO
+Todas as válvulas abertas
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 81.4,
+  "vibracao": 3.4,
+  "status": "ativo",
+  "pecas_produzidas": 555,
+  "pressao_envelope": 4.2,
+  "pressao_saco_ar": 4.9,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+⏸️ JSON 16 - STANDBY
+Modo espera, pronta para iniciar
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 35.0,
+  "vibracao": 0.3,
+  "status": "parado",
+  "pecas_produzidas": 890,
+  "pressao_envelope": 0.5,
+  "pressao_saco_ar": 0.8,
+  "status_motor_ventilador": "desligado",
+  "status_valvula_entrada_autoclave": "fechada",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "fechada",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "fechada",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🔍 JSON 17 - TESTE DE QUALIDADE
+Modo inspeção
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 70.2,
+  "vibracao": 2.0,
+  "status": "ativo",
+  "pecas_produzidas": 5,
+  "pressao_envelope": 3.0,
+  "pressao_saco_ar": 3.6,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+⚠️ JSON 18 - SOBRECARGA
+Sistema estressado, todos parâmetros elevados
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 96.8,
+  "vibracao": 5.5,
+  "status": "ativo",
+  "pecas_produzidas": 1205,
+  "pressao_envelope": 5.8,
+  "pressao_saco_ar": 6.5,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+⭐ JSON 19 - OPERAÇÃO IDEAL
+Condições perfeitas, máxima eficiência
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 72.0,
+  "vibracao": 2.1,
+  "status": "ativo",
+  "pecas_produzidas": 425,
+  "pressao_envelope": 3.5,
+  "pressao_saco_ar": 4.0,
+  "status_motor_ventilador": "ligado",
+  "status_valvula_entrada_autoclave": "aberta",
+  "status_valvula_descarga_autoclave": "fechada",
+  "status_valvula_entrada_saco_ar": "aberta",
+  "status_valvula_descarga_saco_ar": "fechada",
+  "status_valvula_entrada_envelope": "aberta",
+  "status_valvula_descarga_envelope": "fechada"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🚨 JSON 20 - EMERGÊNCIA
+Parada de emergência acionada!!!
+───────────────────────────────────────────────────────────────
+{
+  "temperatura": 87.5,
+  "vibracao": 7.2,
+  "status": "erro",
+  "pecas_produzidas": 643,
+  "pressao_envelope": 0.2,
+  "pressao_saco_ar": 0.3,
+  "status_motor_ventilador": "erro",
+  "status_valvula_entrada_autoclave": "erro",
+  "status_valvula_descarga_autoclave": "aberta",
+  "status_valvula_entrada_saco_ar": "erro",
+  "status_valvula_descarga_saco_ar": "aberta",
+  "status_valvula_entrada_envelope": "erro",
+  "status_valvula_descarga_envelope": "aberta"
+}
+
+═══════════════════════════════════════════════════════════════
+
+🎯 DICA DE TESTE RÁPIDO:
+Envie os JSONs nesta ordem para simular um dia completo:
+
+7 → 1 → 5 → 9 → 14 → 12 → 16
+(Início → Normal → Produção Alta → Econômico → Noturno → Resfriamento → Standby)
+
+═══════════════════════════════════════════════════════════════
+
+📊 O QUE OBSERVAR:
+
+Dashboard:
+- Gráficos se atualizando em tempo real
+- Cards de status mudando de cor
+- Novo gráfico de pressões combinadas
+
+Registros (/registros):
+- Cada JSON aparece como uma nova linha na tabela
+- Todas as 14 colunas preenchidas
+- Chips coloridos para status
+
+Status da Máquina (/status-maquina):
+- 9 cards mudando de cor conforme o status
+- Verde = Ligado/Aberta
+- Amarelo = Desligado/Fechada
+- Vermelho = Erro
+
+═══════════════════════════════════════════════════════════════
+

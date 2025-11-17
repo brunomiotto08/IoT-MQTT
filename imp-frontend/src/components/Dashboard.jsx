@@ -31,6 +31,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 
@@ -131,11 +133,13 @@ function Dashboard() {
         const historicalArray = response.data || [];
         setHistoricalData(historicalArray);
         
-        // Definir o último dado como liveData para mostrar nos cards
+        // Definir o dado mais recente como liveData para mostrar nos cards
+        // Como os dados agora vêm em ordem descendente (mais recentes primeiro),
+        // o primeiro elemento é o mais recente
         if (historicalArray.length > 0) {
-          const lastData = historicalArray[historicalArray.length - 1];
+          const lastData = historicalArray[0]; // Primeiro elemento = mais recente
           setLiveData(lastData);
-          console.log('📊 Último dado histórico definido como liveData:', lastData);
+          console.log('📊 Dado mais recente definido como liveData:', lastData);
         }
         
         setLastUpdate(new Date());
@@ -148,11 +152,11 @@ function Dashboard() {
           const fallbackArray = fallbackResponse.data || [];
           setHistoricalData(fallbackArray);
           
-          // Definir o último dado como liveData
+          // Definir o dado mais recente como liveData
           if (fallbackArray.length > 0) {
-            const lastData = fallbackArray[fallbackArray.length - 1];
+            const lastData = fallbackArray[0]; // Primeiro elemento = mais recente
             setLiveData(lastData);
-            console.log('📊 Último dado histórico (fallback) definido como liveData:', lastData);
+            console.log('📊 Dado mais recente (fallback) definido como liveData:', lastData);
           }
           
           setLastUpdate(new Date());
@@ -307,7 +311,14 @@ function Dashboard() {
           'Authorization': `Bearer ${session.access_token}`
         }
       });
-      setHistoricalData(response.data || []);
+      const historicalArray = response.data || [];
+      setHistoricalData(historicalArray);
+      
+      // Atualizar liveData com o mais recente
+      if (historicalArray.length > 0) {
+        setLiveData(historicalArray[0]);
+      }
+      
       setLastUpdate(new Date());
     } catch (error) {
       console.error('Erro ao atualizar dados:', error);
@@ -315,7 +326,14 @@ function Dashboard() {
       // Fallback para o endpoint de teste
       try {
         const fallbackResponse = await axios.get(`${API_URL}/api/leituras-test`);
-        setHistoricalData(fallbackResponse.data || []);
+        const fallbackArray = fallbackResponse.data || [];
+        setHistoricalData(fallbackArray);
+        
+        // Atualizar liveData com o mais recente
+        if (fallbackArray.length > 0) {
+          setLiveData(fallbackArray[0]);
+        }
+        
         setLastUpdate(new Date());
       } catch (fallbackError) {
         console.error('Erro no fallback:', fallbackError);
@@ -389,9 +407,14 @@ function Dashboard() {
 
   const gaugeSeries = [liveData ? parseFloat(liveData.temperatura) : 0];
   
+  // Reverter ordem para gráfico (mais antigo ao mais recente)
+  const sortedData = [...filteredData].sort((a, b) => 
+    new Date(a.created_at) - new Date(b.created_at)
+  );
+  
   const lineSeries = [{
     name: 'Temperatura',
-    data: filteredData.map((d) => ([
+    data: sortedData.map((d) => ([
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
       d.temperatura != null ? parseFloat(d.temperatura) : 0
     ]))
@@ -399,7 +422,7 @@ function Dashboard() {
   
   const vibrationSeries = [{
     name: 'Vibração',
-    data: filteredData.map((d) => ([
+    data: sortedData.map((d) => ([
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
       d.vibracao != null ? parseFloat(d.vibracao) : 0
     ]))
@@ -407,35 +430,52 @@ function Dashboard() {
   
   const productionSeries = [{
     name: 'Peças Produzidas',
-    data: filteredData.map((d) => ([
+    data: sortedData.map((d) => ([
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
       d.pecas_produzidas != null ? parseInt(d.pecas_produzidas) : 0
     ]))
   }];
+  
+  const pressureSeries = [
+    {
+      name: 'Pressão Envelope',
+      data: sortedData.map((d) => ([
+        d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+        d.pressao_envelope != null ? parseFloat(d.pressao_envelope) : 0
+      ]))
+    },
+    {
+      name: 'Pressão Saco de Ar',
+      data: sortedData.map((d) => ([
+        d.created_at ? new Date(d.created_at).getTime() : Date.now(),
+        d.pressao_saco_ar != null ? parseFloat(d.pressao_saco_ar) : 0
+      ]))
+    }
+  ];
 
   return (
     <Box sx={{ flexGrow: 1, backgroundColor: 'background.default', minHeight: '100vh' }}>
       {/* Modern Header */}
-      <AppBar 
-        position="static" 
-        elevation={0} 
-        sx={{ 
-          background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(30, 30, 30, 0.98) 100%)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '2px solid',
-          borderColor: 'rgba(80, 80, 80, 0.3)',
-          animation: 'fadeInUp 0.6s ease-out',
-        }}
-      >
+              <AppBar 
+                position="static" 
+                elevation={0} 
+                sx={{ 
+                  background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(30, 30, 30, 0.98) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  borderBottom: '2px solid',
+                  borderColor: 'rgba(30, 64, 175, 0.3)',
+                  animation: 'fadeInUp 0.6s ease-out',
+                }}
+              >
         <Toolbar sx={{ py: 3, px: 5 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
             <Avatar 
               sx={{ 
-                background: 'linear-gradient(135deg, #505050 0%, #707070 100%)',
+                background: 'linear-gradient(135deg, #1e40af 0%, #f97316 100%)',
                 mr: 3,
                 width: 64,
                 height: 64,
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
+                boxShadow: '0 8px 24px rgba(249, 115, 22, 0.4)',
               }}
             >
               <ThermostatOutlined sx={{ fontSize: 36, color: '#ffffff' }} />
@@ -452,7 +492,7 @@ function Dashboard() {
                   letterSpacing: '-0.02em',
                 }}
               >
-                Dashboard I.M.P.
+                Dashboard AutoClave
               </Typography>
               <Typography 
                 variant="body1" 
@@ -469,7 +509,7 @@ function Dashboard() {
           </Box>
           
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* Botões de navegação */}
+            {/* Botões de navegação - Ordem lógica */}
             <Button
               variant="text"
               startIcon={<DashboardIcon />}
@@ -487,8 +527,8 @@ function Dashboard() {
             
             <Button
               variant="text"
-              startIcon={<HistoryIcon />}
-              onClick={() => navigate('/historico')}
+              startIcon={<MonitorHeartIcon />}
+              onClick={() => navigate('/status-maquina')}
               sx={{
                 color: '#ffffff',
                 fontWeight: 700,
@@ -498,7 +538,39 @@ function Dashboard() {
                 }
               }}
             >
-              Histórico
+              Status
+            </Button>
+            
+            <Button
+              variant="text"
+              startIcon={<HistoryIcon />}
+              onClick={() => navigate('/ciclos')}
+              sx={{
+                color: '#ffffff',
+                fontWeight: 700,
+                px: 2,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              Ciclos
+            </Button>
+            
+            <Button
+              variant="text"
+              startIcon={<TableChartIcon />}
+              onClick={() => navigate('/registros')}
+              sx={{
+                color: '#ffffff',
+                fontWeight: 700,
+                px: 2,
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                }
+              }}
+            >
+              Registros
             </Button>
             
             <Button
@@ -515,22 +587,6 @@ function Dashboard() {
               }}
             >
               Notificações
-            </Button>
-            
-            <Button
-              variant="text"
-              startIcon={<SettingsIcon />}
-              onClick={() => navigate('/configuracoes')}
-              sx={{
-                color: '#ffffff',
-                fontWeight: 700,
-                px: 2,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              Configurações
             </Button>
 
             <Box sx={{ width: 2, height: 40, bgcolor: 'rgba(255, 255, 255, 0.2)', mx: 1 }} />
@@ -586,17 +642,36 @@ function Dashboard() {
                 width: 52, 
                 height: 52,
                 border: '3px solid',
-                borderColor: 'rgba(120, 120, 120, 0.4)',
+                borderColor: 'rgba(30, 64, 175, 0.4)',
                 color: '#ffffff',
                 '&:hover': {
-                  borderColor: '#b0b0b0',
-                  background: 'rgba(80, 80, 80, 0.2)',
+                  borderColor: '#f97316',
+                  background: 'rgba(249, 115, 22, 0.15)',
                   transform: 'rotate(180deg)',
                 },
                 transition: 'all 0.4s ease',
               }}
             >
               <RefreshOutlined sx={{ fontSize: 26, color: '#ffffff' }} />
+            </IconButton>
+            
+            <IconButton 
+              onClick={() => navigate('/configuracoes')}
+              sx={{ 
+                width: 52, 
+                height: 52,
+                border: '3px solid',
+                borderColor: 'rgba(30, 64, 175, 0.4)',
+                color: '#ffffff',
+                '&:hover': {
+                  borderColor: '#f97316',
+                  background: 'rgba(249, 115, 22, 0.15)',
+                  transform: 'scale(1.1)',
+                },
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <SettingsIcon sx={{ fontSize: 26, color: '#ffffff' }} />
             </IconButton>
             
             <Button 
@@ -849,6 +924,25 @@ function Dashboard() {
                 title="Produção Acumulada" 
                 unit="unidades"
                 color="#4caf50"
+              />
+            </Grid>
+            
+            {/* Terceira linha - Pressões (Envelope e Saco de Ar) */}
+            <Grid 
+              item 
+              xs={12}
+              sx={{ 
+                animation: 'fadeInUp 0.6s ease-out',
+                animationDelay: '0.9s',
+                animationFillMode: 'both',
+                display: 'flex',
+              }}
+            >
+              <LineChart 
+                series={pressureSeries} 
+                title="Pressões - Envelope e Saco de Ar" 
+                unit="bar"
+                color="#2196f3"
               />
             </Grid>
           </Grid>

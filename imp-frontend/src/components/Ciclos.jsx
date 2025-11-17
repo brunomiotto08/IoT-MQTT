@@ -34,7 +34,7 @@ import ReactApexChart from 'react-apexcharts';
 
 const API_URL = 'http://localhost:3000';
 
-function Historico() {
+function Ciclos() {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [maquinas, setMaquinas] = useState([]);
@@ -179,48 +179,144 @@ function Historico() {
   const chartOptions = {
     chart: {
       type: 'line',
-      height: 350,
+      height: 450,
+      background: 'transparent',
+      foreColor: '#ffffff',
+      fontFamily: '"Poppins", sans-serif',
       zoom: {
         enabled: true
       },
       toolbar: {
-        show: true
+        show: true,
+        tools: {
+          download: true,
+          selection: true,
+          zoom: true,
+          zoomin: true,
+          zoomout: true,
+          pan: true,
+          reset: true
+        }
       }
+    },
+    theme: {
+      mode: 'dark'
     },
     stroke: {
       curve: 'smooth',
-      width: 2
+      width: 4
+    },
+    grid: {
+      show: true,
+      borderColor: 'rgba(30, 64, 175, 0.2)',
+      strokeDashArray: 4,
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: true
+        }
+      }
     },
     xaxis: {
       type: 'datetime',
       labels: {
-        format: 'HH:mm:ss'
+        format: 'HH:mm:ss',
+        style: {
+          colors: '#cbd5e1',
+          fontSize: '13px',
+          fontWeight: 600
+        }
+      },
+      axisBorder: {
+        show: true,
+        color: 'rgba(30, 64, 175, 0.3)'
+      },
+      axisTicks: {
+        show: true,
+        color: 'rgba(30, 64, 175, 0.3)'
       }
     },
     yaxis: [
       {
         title: {
-          text: 'Temperatura (°C)'
+          text: 'Temperatura (°C)',
+          style: {
+            color: '#f97316',
+            fontSize: '14px',
+            fontWeight: 700
+          }
+        },
+        labels: {
+          style: {
+            colors: '#f97316',
+            fontSize: '13px',
+            fontWeight: 600
+          }
         },
         seriesName: 'Temperatura'
       },
       {
         opposite: true,
         title: {
-          text: 'Vibração (mm/s)'
+          text: 'Vibração (mm/s)',
+          style: {
+            color: '#1e40af',
+            fontSize: '14px',
+            fontWeight: 700
+          }
+        },
+        labels: {
+          style: {
+            colors: '#1e40af',
+            fontSize: '13px',
+            fontWeight: 600
+          }
         },
         seriesName: 'Vibração'
       }
     ],
     tooltip: {
+      theme: 'dark',
       x: {
         format: 'dd/MM HH:mm:ss'
+      },
+      y: {
+        formatter: (value, { seriesIndex }) => {
+          if (seriesIndex === 0) {
+            return `${value.toFixed(1)}°C`;
+          }
+          return `${value.toFixed(2)} mm/s`;
+        }
+      },
+      style: {
+        fontSize: '13px'
       }
     },
     legend: {
-      position: 'top'
+      position: 'top',
+      horizontalAlign: 'center',
+      fontSize: '14px',
+      fontWeight: 700,
+      labels: {
+        colors: '#ffffff'
+      },
+      markers: {
+        width: 12,
+        height: 12,
+        radius: 6
+      }
     },
-    colors: ['#FF4560', '#00E396']
+    markers: {
+      size: 0,
+      hover: {
+        size: 7
+      }
+    },
+    colors: ['#f97316', '#1e40af']
   };
 
   const chartSeries = [
@@ -260,7 +356,7 @@ function Historico() {
           </IconButton>
           <HistoryIcon sx={{ mr: 2, fontSize: 32 }} />
           <Typography variant="h5" component="div" sx={{ flexGrow: 1, fontWeight: 900 }}>
-            Histórico de Ciclos
+            Ciclos
           </Typography>
         </Toolbar>
       </AppBar>
@@ -399,19 +495,57 @@ function Historico() {
 
         {/* Gráfico */}
         {cicloSelecionado && leiturasCiclo.length > 0 && (
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Dados do Ciclo: {cicloSelecionado.maquina_nome}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              {formatarData(cicloSelecionado.start_time)} até {formatarData(cicloSelecionado.end_time)}
-            </Typography>
-            <Box sx={{ mt: 2 }}>
+          <Paper 
+            elevation={3} 
+            sx={{ 
+              p: 4, 
+              borderRadius: 3,
+              background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%)',
+              border: '2px solid rgba(30, 64, 175, 0.3)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+              <Box>
+                <Typography 
+                  variant="h5" 
+                  sx={{ 
+                    fontWeight: 800, 
+                    mb: 1,
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}
+                >
+                  📊 Dados do Ciclo: {cicloSelecionado.maquina_nome}
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: '#94a3b8',
+                    fontSize: '0.95rem',
+                    fontWeight: 500
+                  }}
+                >
+                  🕐 {formatarData(cicloSelecionado.start_time)} até {formatarData(cicloSelecionado.end_time)}
+                </Typography>
+              </Box>
+            </Box>
+            <Box 
+              sx={{ 
+                mt: 3,
+                p: 3,
+                borderRadius: 2,
+                background: 'rgba(15, 15, 25, 0.5)',
+                border: '1px solid rgba(30, 64, 175, 0.2)'
+              }}
+            >
               <ReactApexChart
                 options={chartOptions}
                 series={chartSeries}
                 type="line"
-                height={400}
+                height={450}
               />
             </Box>
           </Paper>
@@ -428,5 +562,5 @@ function Historico() {
   );
 }
 
-export default Historico;
+export default Ciclos;
 

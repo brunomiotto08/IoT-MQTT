@@ -87,12 +87,17 @@ app.get('/api/leituras', async (req, res) => {
 
     // 2. Buscar APENAS as leituras da empresa do usuário
     console.log('🔍 Buscando leituras da empresa:', vinculo.empresa_id);
+    
+    // Permitir limite customizado via query params (padrão: 100)
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+    
     const { data, error } = await supabase
       .from('leituras_maquina')
       .select('*')
       .eq('empresa_id', vinculo.empresa_id)  // ✅ FILTRO EXPLÍCITO POR EMPRESA!
-      .order('created_at', { ascending: true })
-      .limit(50);
+      .order('created_at', { ascending: false }) // Mais recentes primeiro
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.log('❌ Erro ao buscar dados:', error);
@@ -115,11 +120,14 @@ app.get('/api/leituras-test', async (req, res) => {
   console.log('🔍 Teste: Buscando dados sem autenticação...');
   
   try {
+    const limit = parseInt(req.query.limit) || 100;
+    const offset = parseInt(req.query.offset) || 0;
+    
     const { data, error } = await supabase
       .from('leituras_maquina')
       .select('*')
-      .order('created_at', { ascending: true })
-      .limit(50);
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
 
     if (error) {
       console.log('❌ Erro ao buscar dados:', error);

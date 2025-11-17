@@ -1,0 +1,387 @@
+{
+  "descricao": "Exemplos de dados MQTT para testes do Sistema I.M.P. V2.2",
+  "topico": "empresas/{empresa_id}/maquinas/{maquina_id}/sensores",
+  "exemplos": [
+    {
+      "nome": "1. Operação Normal - Tudo Funcionando",
+      "cenario": "Máquina em funcionamento normal, todos os componentes operacionais",
+      "dados": {
+        "temperatura": 75.5,
+        "vibracao": 2.3,
+        "status": "ativo",
+        "pecas_produzidas": 150,
+        "pressao_envelope": 3.2,
+        "pressao_saco_ar": 4.1,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "2. Temperatura Crítica - Alerta!",
+      "cenario": "Temperatura muito alta, sistema em alerta",
+      "dados": {
+        "temperatura": 95.8,
+        "vibracao": 3.7,
+        "status": "ativo",
+        "pecas_produzidas": 245,
+        "pressao_envelope": 4.5,
+        "pressao_saco_ar": 5.2,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    },
+    {
+      "nome": "3. Máquina Desligada - Manutenção",
+      "cenario": "Máquina em manutenção, todos os componentes desligados",
+      "dados": {
+        "temperatura": 25.3,
+        "vibracao": 0.1,
+        "status": "parado",
+        "pecas_produzidas": 450,
+        "pressao_envelope": 0.0,
+        "pressao_saco_ar": 0.0,
+        "status_motor_ventilador": "desligado",
+        "status_valvula_entrada_autoclave": "fechada",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "fechada",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "fechada",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "4. Erro em Válvulas - Sistema com Falha",
+      "cenario": "Algumas válvulas apresentando erro, pressões anormais",
+      "dados": {
+        "temperatura": 82.1,
+        "vibracao": 4.5,
+        "status": "erro",
+        "pecas_produzidas": 320,
+        "pressao_envelope": 1.2,
+        "pressao_saco_ar": 6.8,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "erro",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "erro",
+        "status_valvula_entrada_envelope": "erro",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "5. Produção Alta - Pico de Trabalho",
+      "cenario": "Máquina em produção intensa, alta performance",
+      "dados": {
+        "temperatura": 88.3,
+        "vibracao": 3.2,
+        "status": "ativo",
+        "pecas_produzidas": 785,
+        "pressao_envelope": 4.8,
+        "pressao_saco_ar": 5.5,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "6. Pressões Baixas - Possível Vazamento",
+      "cenario": "Pressões abaixo do normal, possível vazamento no sistema",
+      "dados": {
+        "temperatura": 68.5,
+        "vibracao": 1.8,
+        "status": "ativo",
+        "pecas_produzidas": 195,
+        "pressao_envelope": 0.8,
+        "pressao_saco_ar": 1.2,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "7. Início de Operação - Aquecimento",
+      "cenario": "Máquina iniciando operação, temperatura subindo gradualmente",
+      "dados": {
+        "temperatura": 45.2,
+        "vibracao": 1.5,
+        "status": "ativo",
+        "pecas_produzidas": 12,
+        "pressao_envelope": 2.1,
+        "pressao_saco_ar": 2.8,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "fechada",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "8. Ciclo de Descarga - Válvulas Invertidas",
+      "cenario": "Máquina em ciclo de descarga, válvulas de descarga abertas",
+      "dados": {
+        "temperatura": 79.6,
+        "vibracao": 2.7,
+        "status": "ativo",
+        "pecas_produzidas": 530,
+        "pressao_envelope": 2.5,
+        "pressao_saco_ar": 3.3,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "fechada",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "fechada",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "fechada",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    },
+    {
+      "nome": "9. Modo Econômico - Baixo Consumo",
+      "cenario": "Operação em modo econômico, parâmetros reduzidos",
+      "dados": {
+        "temperatura": 62.3,
+        "vibracao": 1.2,
+        "status": "ativo",
+        "pecas_produzidas": 88,
+        "pressao_envelope": 2.0,
+        "pressao_saco_ar": 2.5,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "fechada",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "10. Vibração Alta - Necessita Ajuste",
+      "cenario": "Vibração acima do normal, possível desbalanceamento",
+      "dados": {
+        "temperatura": 73.8,
+        "vibracao": 5.8,
+        "status": "ativo",
+        "pecas_produzidas": 412,
+        "pressao_envelope": 3.5,
+        "pressao_saco_ar": 4.2,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "11. Teste de Limite - Máximo Operacional",
+      "cenario": "Teste nos limites máximos de operação",
+      "dados": {
+        "temperatura": 98.5,
+        "vibracao": 4.9,
+        "status": "ativo",
+        "pecas_produzidas": 999,
+        "pressao_envelope": 6.0,
+        "pressao_saco_ar": 7.2,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    },
+    {
+      "nome": "12. Resfriamento - Pós Operação",
+      "cenario": "Máquina em processo de resfriamento após operação",
+      "dados": {
+        "temperatura": 55.7,
+        "vibracao": 0.8,
+        "status": "parado",
+        "pecas_produzidas": 680,
+        "pressao_envelope": 1.5,
+        "pressao_saco_ar": 2.0,
+        "status_motor_ventilador": "desligado",
+        "status_valvula_entrada_autoclave": "fechada",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "fechada",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "fechada",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    },
+    {
+      "nome": "13. Motor em Falha - Crítico",
+      "cenario": "Motor ventilador apresentando erro, temperatura subindo",
+      "dados": {
+        "temperatura": 92.3,
+        "vibracao": 6.2,
+        "status": "erro",
+        "pecas_produzidas": 367,
+        "pressao_envelope": 3.8,
+        "pressao_saco_ar": 4.6,
+        "status_motor_ventilador": "erro",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "14. Operação Noturna - Regime Reduzido",
+      "cenario": "Operação em turno noturno com parâmetros reduzidos",
+      "dados": {
+        "temperatura": 65.1,
+        "vibracao": 1.6,
+        "status": "ativo",
+        "pecas_produzidas": 205,
+        "pressao_envelope": 2.3,
+        "pressao_saco_ar": 3.0,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "fechada",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "15. Ciclo Completo - Todas Válvulas Abertas",
+      "cenario": "Ciclo especial com todas as válvulas abertas",
+      "dados": {
+        "temperatura": 81.4,
+        "vibracao": 3.4,
+        "status": "ativo",
+        "pecas_produzidas": 555,
+        "pressao_envelope": 4.2,
+        "pressao_saco_ar": 4.9,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    },
+    {
+      "nome": "16. Standby - Modo Espera",
+      "cenario": "Máquina em standby, pronta para iniciar",
+      "dados": {
+        "temperatura": 35.0,
+        "vibracao": 0.3,
+        "status": "parado",
+        "pecas_produzidas": 890,
+        "pressao_envelope": 0.5,
+        "pressao_saco_ar": 0.8,
+        "status_motor_ventilador": "desligado",
+        "status_valvula_entrada_autoclave": "fechada",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "fechada",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "fechada",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "17. Teste de Qualidade - Inspeção",
+      "cenario": "Modo de teste para inspeção de qualidade",
+      "dados": {
+        "temperatura": 70.2,
+        "vibracao": 2.0,
+        "status": "ativo",
+        "pecas_produzidas": 5,
+        "pressao_envelope": 3.0,
+        "pressao_saco_ar": 3.6,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "18. Sobrecarga - Sistema Estressado",
+      "cenario": "Sistema em sobrecarga, todos os parâmetros elevados",
+      "dados": {
+        "temperatura": 96.8,
+        "vibracao": 5.5,
+        "status": "ativo",
+        "pecas_produzidas": 1205,
+        "pressao_envelope": 5.8,
+        "pressao_saco_ar": 6.5,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    },
+    {
+      "nome": "19. Operação Ideal - Parâmetros Ótimos",
+      "cenario": "Condições ideais de operação, máxima eficiência",
+      "dados": {
+        "temperatura": 72.0,
+        "vibracao": 2.1,
+        "status": "ativo",
+        "pecas_produzidas": 425,
+        "pressao_envelope": 3.5,
+        "pressao_saco_ar": 4.0,
+        "status_motor_ventilador": "ligado",
+        "status_valvula_entrada_autoclave": "aberta",
+        "status_valvula_descarga_autoclave": "fechada",
+        "status_valvula_entrada_saco_ar": "aberta",
+        "status_valvula_descarga_saco_ar": "fechada",
+        "status_valvula_entrada_envelope": "aberta",
+        "status_valvula_descarga_envelope": "fechada"
+      }
+    },
+    {
+      "nome": "20. Emergência - Parada de Emergência",
+      "cenario": "Parada de emergência acionada, sistema desligando",
+      "dados": {
+        "temperatura": 87.5,
+        "vibracao": 7.2,
+        "status": "erro",
+        "pecas_produzidas": 643,
+        "pressao_envelope": 0.2,
+        "pressao_saco_ar": 0.3,
+        "status_motor_ventilador": "erro",
+        "status_valvula_entrada_autoclave": "erro",
+        "status_valvula_descarga_autoclave": "aberta",
+        "status_valvula_entrada_saco_ar": "erro",
+        "status_valvula_descarga_saco_ar": "aberta",
+        "status_valvula_entrada_envelope": "erro",
+        "status_valvula_descarga_envelope": "aberta"
+      }
+    }
+  ]
+}
+

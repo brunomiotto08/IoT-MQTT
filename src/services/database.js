@@ -16,8 +16,44 @@ pool.connect((err, client, release) => {
 });
 
 async function saveReading(data, empresaId, maquinaId = null, cicloId = null) {
-  const insertQuery = `INSERT INTO leituras_maquina(temperatura, vibracao, status, pecas_produzidas, empresa_id, maquina_id, ciclo_id) VALUES($1, $2, $3, $4, $5, $6, $7)`;
-  const values = [data.temperatura, data.vibracao, data.status, data.pecas_produzidas, empresaId, maquinaId, cicloId];
+  const insertQuery = `INSERT INTO leituras_maquina(
+    temperatura, 
+    vibracao, 
+    status, 
+    pecas_produzidas, 
+    empresa_id, 
+    maquina_id, 
+    ciclo_id,
+    pressao_envelope,
+    pressao_saco_ar,
+    status_motor_ventilador,
+    status_valvula_entrada_autoclave,
+    status_valvula_descarga_autoclave,
+    status_valvula_entrada_saco_ar,
+    status_valvula_descarga_saco_ar,
+    status_valvula_entrada_envelope,
+    status_valvula_descarga_envelope
+  ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`;
+  
+  const values = [
+    data.temperatura, 
+    data.vibracao, 
+    data.status, 
+    data.pecas_produzidas, 
+    empresaId, 
+    maquinaId, 
+    cicloId,
+    data.pressao_envelope || null,
+    data.pressao_saco_ar || null,
+    data.status_motor_ventilador || null,
+    data.status_valvula_entrada_autoclave || null,
+    data.status_valvula_descarga_autoclave || null,
+    data.status_valvula_entrada_saco_ar || null,
+    data.status_valvula_descarga_saco_ar || null,
+    data.status_valvula_entrada_envelope || null,
+    data.status_valvula_descarga_envelope || null
+  ];
+  
   try {
     await pool.query(insertQuery, values);
     console.log(`💾 Dados salvos para a empresa ${empresaId}${maquinaId ? ` - Máquina ${maquinaId}` : ''}${cicloId ? ` - Ciclo ${cicloId}` : ''}!`);

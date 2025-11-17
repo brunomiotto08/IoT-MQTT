@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import Chart from 'react-apexcharts';
 import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
@@ -28,7 +28,7 @@ const gaugeOptions = {
         margin: 15,
       },
       track: {
-        background: 'rgba(139, 92, 246, 0.1)',
+        background: 'rgba(30, 64, 175, 0.1)', // Azul escuro
         strokeWidth: '100%',
         margin: 0,
       },
@@ -41,7 +41,7 @@ const gaugeOptions = {
           fontWeight: 800,
           show: true,
           formatter: (val) => `${parseFloat(val).toFixed(1)}°C`,
-          color: '#8b5cf6',
+          color: '#f97316', // Laranja
           offsetY: 10
         }
       }
@@ -53,11 +53,11 @@ const gaugeOptions = {
       shade: 'dark',
       type: 'horizontal',
       shadeIntensity: 0.5,
-      gradientToColors: ['#06b6d4', '#10b981'],
+      gradientToColors: ['#f97316'], // Laranja
       inverseColors: false,
       opacityFrom: 1,
       opacityTo: 1,
-      stops: [0, 50, 100]
+      stops: [0, 100]
     }
   },
   stroke: { 
@@ -65,10 +65,29 @@ const gaugeOptions = {
     width: 0
   },
   labels: ['Temperatura'],
-  colors: ['#8b5cf6']
+  colors: ['#1e40af'] // Azul escuro
 };
 
 function GaugeChart({ series }) {
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [prevTemp, setPrevTemp] = useState(series[0] || 0);
+
+  const temperature = series[0] || 0;
+
+  // Detectar mudanças na temperatura
+  useEffect(() => {
+    if (temperature !== prevTemp) {
+      setIsUpdating(true);
+      
+      const timer = setTimeout(() => {
+        setPrevTemp(temperature);
+        setIsUpdating(false);
+      }, 400); // Duração do fade out
+      
+      return () => clearTimeout(timer);
+    }
+  }, [temperature, prevTemp]);
+
   const getTemperatureStatus = (temp) => {
     if (temp >= 80) return { status: 'Crítico', color: 'error' };
     if (temp >= 60) return { status: 'Alto', color: 'warning' };
@@ -76,7 +95,6 @@ function GaugeChart({ series }) {
     return { status: 'Baixo', color: 'info' };
   };
 
-  const temperature = series[0] || 0;
   const tempStatus = getTemperatureStatus(temperature);
 
   return (
@@ -101,13 +119,13 @@ function GaugeChart({ series }) {
             left: 0,
             right: 0,
             height: '3px',
-            background: 'linear-gradient(90deg, #888888, #aaaaaa)',
-            opacity: 0.6,
+            background: 'linear-gradient(90deg, #1e40af, #f97316)',
+            opacity: 0.8,
           },
           '&:hover': {
             transform: 'translateY(-8px) scale(1.02)',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.8)',
-            borderColor: 'rgba(120, 120, 120, 0.5)',
+            boxShadow: '0 20px 60px rgba(249, 115, 22, 0.4)',
+            borderColor: 'rgba(30, 64, 175, 0.6)',
           }
         }}
       >
@@ -135,7 +153,14 @@ function GaugeChart({ series }) {
             </Typography>
           </Box>
           
-          <Box sx={{ position: 'relative', mb: 2 }}>
+          <Box 
+            sx={{ 
+              position: 'relative', 
+              mb: 2,
+              transition: 'opacity 0.4s ease-in-out',
+              opacity: isUpdating ? 0 : 1,
+            }}
+          >
             <Chart 
               options={gaugeOptions} 
               series={series} 
@@ -208,7 +233,7 @@ function GaugeChart({ series }) {
             width: 160,
             height: 160,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(60, 60, 60, 0.15) 0%, transparent 70%)',
+            background: 'radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, rgba(30, 64, 175, 0.1) 50%, transparent 70%)',
             filter: 'blur(35px)',
             pointerEvents: 'none',
           }}
