@@ -421,7 +421,7 @@ function Dashboard() {
   }];
   
   const vibrationSeries = [{
-    name: 'Vibração',
+    name: 'Pressão',
     data: sortedData.map((d) => ([
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
       d.vibracao != null ? parseFloat(d.vibracao) : 0
@@ -764,8 +764,8 @@ function Dashboard() {
           {/* Status Overview Cards */}
           <Grid 
             container 
-            spacing={4} 
-            sx={{ mb: 7 }}
+            spacing={3} 
+            sx={{ mb: 6 }}
             justifyContent="center"
             alignItems="stretch"
           >
@@ -773,7 +773,7 @@ function Dashboard() {
               item 
               xs={12} 
               sm={6} 
-              md={3}
+              lg={3}
               sx={{ 
                 animation: 'fadeInUp 0.6s ease-out',
                 animationDelay: '0.1s',
@@ -794,7 +794,7 @@ function Dashboard() {
               item 
               xs={12} 
               sm={6} 
-              md={3}
+              lg={3}
               sx={{ 
                 animation: 'fadeInUp 0.6s ease-out',
                 animationDelay: '0.2s',
@@ -803,9 +803,9 @@ function Dashboard() {
               }}
             >
               <DataCard 
-                title="Vibração" 
+                title="Pressão" 
                 value={liveData ? liveData.vibracao?.toFixed(2) : null} 
-                unit="mm/s"
+                unit="Pa"
                 icon={<SpeedOutlined />}
                 color="secondary"
                 threshold={true}
@@ -815,7 +815,7 @@ function Dashboard() {
               item 
               xs={12} 
               sm={6} 
-              md={3}
+              lg={3}
               sx={{ 
                 animation: 'fadeInUp 0.6s ease-out',
                 animationDelay: '0.3s',
@@ -836,7 +836,7 @@ function Dashboard() {
               item 
               xs={12} 
               sm={6} 
-              md={3}
+              lg={3}
               sx={{ 
                 animation: 'fadeInUp 0.6s ease-out',
                 animationDelay: '0.4s',
@@ -889,7 +889,7 @@ function Dashboard() {
               <LineChart series={lineSeries} />
             </Grid>
             
-            {/* Segunda linha - Vibração e Peças Produzidas */}
+            {/* Segunda linha - Pressão e Peças Produzidas */}
             <Grid 
               item 
               xs={12} 
@@ -903,8 +903,8 @@ function Dashboard() {
             >
               <LineChart 
                 series={vibrationSeries} 
-                title="Vibração" 
-                unit="mm/s"
+                title="Pressão" 
+                unit="Pa"
                 color="#ff9800"
               />
             </Grid>

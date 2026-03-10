@@ -2,10 +2,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Configurações do Supabase (usando as chaves que estavam funcionando)
-const supabaseUrl = 'https://nwifacoufwbjltsmpxdf.supabase.co';
-const supabaseAnonKey = 'sb_publishable_myZ-OwQZD_pyFEaL1wB87Q_d--wO7vp';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Cria e exporta o cliente Supabase.
-// Este cliente será o nosso ponto de acesso único para todas as interações com o Supabase.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

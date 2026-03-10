@@ -28,6 +28,8 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import ThermostatIcon from '@mui/icons-material/Thermostat';
 import VibrationIcon from '@mui/icons-material/Vibration';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import CompressIcon from '@mui/icons-material/Compress';
+import InventoryIcon from '@mui/icons-material/Inventory';
 import soundManager from '../utils/soundManager';
 
 // Configurações padrão
@@ -38,11 +40,23 @@ const DEFAULT_CONFIG = {
     critico: 100,
     maximo: 150
   },
-  vibracao: {
+  pressao: {
     minimo: 0,
     atenção: 5,
     critico: 8,
     maximo: 15
+  },
+  pressao_envelope: {
+    minimo: 0,
+    atenção: 4,
+    critico: 6,
+    maximo: 10
+  },
+  pressao_saco_ar: {
+    minimo: 0,
+    atenção: 4,
+    critico: 6,
+    maximo: 10
   },
   notificacoes: {
     som: true,
@@ -75,7 +89,16 @@ function Configuracoes() {
     try {
       const savedConfig = localStorage.getItem('imp_thresholds');
       if (savedConfig) {
-        setConfig(JSON.parse(savedConfig));
+        const config = JSON.parse(savedConfig);
+        
+        // Migração automática: vibracao -> pressao
+        if (config.vibracao && !config.pressao) {
+          config.pressao = config.vibracao;
+          delete config.vibracao;
+          localStorage.setItem('imp_thresholds', JSON.stringify(config));
+        }
+        
+        setConfig(config);
       }
     } catch (err) {
       console.error('Erro ao carregar configurações:', err);
@@ -89,8 +112,16 @@ function Configuracoes() {
         setError('Temperatura de atenção deve ser menor que a crítica');
         return;
       }
-      if (config.vibracao.atenção >= config.vibracao.critico) {
-        setError('Vibração de atenção deve ser menor que a crítica');
+      if (config.pressao.atenção >= config.pressao.critico) {
+        setError('Pressão de atenção deve ser menor que a crítica');
+        return;
+      }
+      if (config.pressao_envelope.atenção >= config.pressao_envelope.critico) {
+        setError('Pressão Envelope de atenção deve ser menor que a crítica');
+        return;
+      }
+      if (config.pressao_saco_ar.atenção >= config.pressao_saco_ar.critico) {
+        setError('Pressão Saco de Ar de atenção deve ser menor que a crítica');
         return;
       }
 
@@ -129,11 +160,31 @@ function Configuracoes() {
     }));
   };
 
-  const updateVibracao = (field, value) => {
+  const updatePressao = (field, value) => {
     setConfig(prev => ({
       ...prev,
-      vibracao: {
-        ...prev.vibracao,
+      pressao: {
+        ...prev.pressao,
+        [field]: parseFloat(value) || 0
+      }
+    }));
+  };
+
+  const updatePressaoEnvelope = (field, value) => {
+    setConfig(prev => ({
+      ...prev,
+      pressao_envelope: {
+        ...prev.pressao_envelope,
+        [field]: parseFloat(value) || 0
+      }
+    }));
+  };
+
+  const updatePressaoSacoAr = (field, value) => {
+    setConfig(prev => ({
+      ...prev,
+      pressao_saco_ar: {
+        ...prev.pressao_saco_ar,
         [field]: parseFloat(value) || 0
       }
     }));
@@ -256,13 +307,13 @@ function Configuracoes() {
           </CardContent>
         </Card>
 
-        {/* Vibração */}
+        {/* Pressão */}
         <Card elevation={3} sx={{ mb: 3 }}>
           <CardContent sx={{ p: 4 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
               <VibrationIcon sx={{ fontSize: 40, mr: 2, color: 'secondary.main' }} />
               <Typography variant="h5" fontWeight="bold">
-                Limites de Vibração
+                Limites de Pressão
               </Typography>
             </Box>
             
@@ -270,20 +321,20 @@ function Configuracoes() {
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
-                  label="Mínimo (mm/s)"
+                  label="Mínimo (Pa)"
                   type="number"
-                  value={config.vibracao.minimo}
-                  onChange={(e) => updateVibracao('minimo', e.target.value)}
+                  value={config.pressao.minimo}
+                  onChange={(e) => updatePressao('minimo', e.target.value)}
                   InputProps={{ inputProps: { min: 0, step: 0.1 } }}
                 />
               </Grid>
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
-                  label="Atenção (mm/s)"
+                  label="Atenção (Pa)"
                   type="number"
-                  value={config.vibracao.atenção}
-                  onChange={(e) => updateVibracao('atenção', e.target.value)}
+                  value={config.pressao.atenção}
+                  onChange={(e) => updatePressao('atenção', e.target.value)}
                   helperText="Alerta amarelo"
                   InputProps={{ inputProps: { min: 0, step: 0.1 } }}
                   sx={{
@@ -298,10 +349,10 @@ function Configuracoes() {
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
-                  label="Crítico (mm/s)"
+                  label="Crítico (Pa)"
                   type="number"
-                  value={config.vibracao.critico}
-                  onChange={(e) => updateVibracao('critico', e.target.value)}
+                  value={config.pressao.critico}
+                  onChange={(e) => updatePressao('critico', e.target.value)}
                   helperText="Alerta vermelho"
                   InputProps={{ inputProps: { min: 0, step: 0.1 } }}
                   sx={{
@@ -316,10 +367,152 @@ function Configuracoes() {
               <Grid item xs={12} sm={6} md={3}>
                 <TextField
                   fullWidth
-                  label="Máximo (mm/s)"
+                  label="Máximo (Pa)"
                   type="number"
-                  value={config.vibracao.maximo}
-                  onChange={(e) => updateVibracao('maximo', e.target.value)}
+                  value={config.pressao.maximo}
+                  onChange={(e) => updatePressao('maximo', e.target.value)}
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Pressão Envelope */}
+        <Card elevation={3} sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <CompressIcon sx={{ fontSize: 40, mr: 2, color: '#8b5cf6' }} />
+              <Typography variant="h5" fontWeight="bold">
+                Limites de Pressão - Envelope
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Mínimo (bar)"
+                  type="number"
+                  value={config.pressao_envelope.minimo}
+                  onChange={(e) => updatePressaoEnvelope('minimo', e.target.value)}
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Atenção (bar)"
+                  type="number"
+                  value={config.pressao_envelope.atenção}
+                  onChange={(e) => updatePressaoEnvelope('atenção', e.target.value)}
+                  helperText="Alerta amarelo"
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'warning.main',
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Crítico (bar)"
+                  type="number"
+                  value={config.pressao_envelope.critico}
+                  onChange={(e) => updatePressaoEnvelope('critico', e.target.value)}
+                  helperText="Alerta vermelho"
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'error.main',
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Máximo (bar)"
+                  type="number"
+                  value={config.pressao_envelope.maximo}
+                  onChange={(e) => updatePressaoEnvelope('maximo', e.target.value)}
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Pressão Saco de Ar */}
+        <Card elevation={3} sx={{ mb: 3 }}>
+          <CardContent sx={{ p: 4 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <InventoryIcon sx={{ fontSize: 40, mr: 2, color: '#10b981' }} />
+              <Typography variant="h5" fontWeight="bold">
+                Limites de Pressão - Saco de Ar
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Mínimo (bar)"
+                  type="number"
+                  value={config.pressao_saco_ar.minimo}
+                  onChange={(e) => updatePressaoSacoAr('minimo', e.target.value)}
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Atenção (bar)"
+                  type="number"
+                  value={config.pressao_saco_ar.atenção}
+                  onChange={(e) => updatePressaoSacoAr('atenção', e.target.value)}
+                  helperText="Alerta amarelo"
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'warning.main',
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Crítico (bar)"
+                  type="number"
+                  value={config.pressao_saco_ar.critico}
+                  onChange={(e) => updatePressaoSacoAr('critico', e.target.value)}
+                  helperText="Alerta vermelho"
+                  InputProps={{ inputProps: { min: 0, step: 0.1 } }}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      '&.Mui-focused fieldset': {
+                        borderColor: 'error.main',
+                      },
+                    },
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <TextField
+                  fullWidth
+                  label="Máximo (bar)"
+                  type="number"
+                  value={config.pressao_saco_ar.maximo}
+                  onChange={(e) => updatePressaoSacoAr('maximo', e.target.value)}
                   InputProps={{ inputProps: { min: 0, step: 0.1 } }}
                 />
               </Grid>
@@ -397,202 +590,105 @@ function Configuracoes() {
             <br />
             • As configurações são salvas localmente no navegador
             <br />
-            • Quando um valor ultrapassa o limite de "Atenção", um alerta laranja é exibido
+            • Valores configurados aplicam-se a: <strong>Temperatura, Pressão, Pressão Envelope e Pressão Saco de Ar</strong>
+            <br />
+            • Quando um valor ultrapassa o limite de "Atenção", um alerta amarelo é exibido
             <br />
             • Quando um valor ultrapassa o limite "Crítico", um alerta vermelho é exibido
             <br />
             • O sistema envia notificações automáticas quando os limites são ultrapassados
             <br />
             • O cooldown evita spam de notificações do mesmo tipo
+            <br />
+            • As cores são aplicadas automaticamente nos cards do Dashboard e na tabela de Registros
           </Typography>
         </Paper>
       </Container>
 
-      {/* 🎉 TOAST PREMIUM - Centralizado e Ultra Moderno */}
+      {/* Toast de Confirmação - Minimalista */}
       <Snackbar
         open={saved}
         autoHideDuration={3000}
         onClose={() => setSaved(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{
-          '& .MuiSnackbar-root': {
-            top: '50% !important',
-            transform: 'translateY(-50%)',
-          }
-        }}
       >
-        <Box
+        <Paper
+          elevation={3}
           sx={{
-            minWidth: 450,
-            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.98) 0%, rgba(5, 150, 105, 0.98) 100%)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: 5,
-            border: '3px solid rgba(16, 185, 129, 0.8)',
-            boxShadow: '0 25px 70px rgba(16, 185, 129, 0.6), 0 0 100px rgba(16, 185, 129, 0.5)',
-            position: 'relative',
-            overflow: 'hidden',
-            animation: 'popIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55), float 3s ease-in-out infinite',
-            '@keyframes popIn': {
+            minWidth: 380,
+            background: 'rgba(16, 185, 129, 0.95)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: 2,
+            boxShadow: '0 8px 24px rgba(16, 185, 129, 0.3)',
+            animation: 'fadeInDown 0.3s ease-out',
+            '@keyframes fadeInDown': {
               '0%': {
-                transform: 'scale(0) rotate(-180deg)',
                 opacity: 0,
+                transform: 'translateY(-20px)',
               },
               '100%': {
-                transform: 'scale(1) rotate(0deg)',
                 opacity: 1,
+                transform: 'translateY(0)',
               }
             },
-            '@keyframes float': {
-              '0%, 100%': {
-                transform: 'translateY(0px)',
-              },
-              '50%': {
-                transform: 'translateY(-10px)',
-              }
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '5px',
-              background: 'linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent)',
-              animation: 'slide 2s ease-in-out infinite',
-            },
-            '@keyframes slide': {
-              '0%': { transform: 'translateX(-100%)' },
-              '100%': { transform: 'translateX(100%)' }
-            }
           }}
         >
-          <Box sx={{ p: 4, position: 'relative', zIndex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-              {/* Ícone Premium */}
-              <Avatar
-                sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.25)',
-                  border: '3px solid rgba(255, 255, 255, 0.5)',
-                  width: 70,
-                  height: 70,
-                  fontSize: '2rem',
-                  animation: 'spin 2s ease-in-out infinite',
-                  boxShadow: '0 0 30px rgba(255, 255, 255, 0.5)',
-                  '@keyframes spin': {
-                    '0%, 100%': { transform: 'rotate(0deg) scale(1)' },
-                    '50%': { transform: 'rotate(180deg) scale(1.1)' }
-                  }
-                }}
-              >
-                ✓
-              </Avatar>
-
-              {/* Conteúdo */}
-              <Box sx={{ flex: 1 }}>
-                <Typography 
-                  variant="h5" 
-                  sx={{ 
-                    fontFamily: '"Outfit", sans-serif',
-                    fontWeight: 900,
-                    color: '#ffffff',
-                    textShadow: '0 3px 15px rgba(0, 0, 0, 0.4)',
-                    mb: 0.5,
-                    letterSpacing: 1
-                  }}
-                >
-                  Configurações Salvas!
-                </Typography>
-                
-                <Typography 
-                  variant="body1"
-                  sx={{ 
-                    fontFamily: '"Poppins", sans-serif',
-                    fontWeight: 500,
-                    color: 'rgba(255, 255, 255, 0.95)',
-                    textShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                  }}
-                >
-                  Suas preferências foram aplicadas com sucesso ✨
-                </Typography>
-              </Box>
-
-              {/* Botão Fechar */}
-              <IconButton
-                size="small"
-                onClick={() => setSaved(false)}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.95)',
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  backdropFilter: 'blur(10px)',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.3)',
-                    transform: 'rotate(90deg) scale(1.1)',
-                  },
-                  transition: 'all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
-                }}
-              >
-                ✕
-              </IconButton>
+          <Box sx={{ p: 2.5, display: 'flex', alignItems: 'center', gap: 2 }}>
+            {/* Ícone Simples */}
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem',
+                color: '#ffffff',
+              }}
+            >
+              ✓
             </Box>
-          </Box>
 
-          {/* Confetti Effect */}
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '200%',
-              height: '200%',
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)',
-              animation: 'expand 1s ease-out',
-              pointerEvents: 'none',
-              '@keyframes expand': {
-                '0%': {
-                  width: '0%',
-                  height: '0%',
-                  opacity: 1
+            {/* Conteúdo */}
+            <Box sx={{ flex: 1 }}>
+              <Typography 
+                variant="subtitle1" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: '#ffffff',
+                  mb: 0.25,
+                }}
+              >
+                Configurações Salvas
+              </Typography>
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontSize: '0.875rem',
+                }}
+              >
+                Alterações aplicadas com sucesso
+              </Typography>
+            </Box>
+
+            {/* Botão Fechar */}
+            <IconButton
+              size="small"
+              onClick={() => setSaved(false)}
+              sx={{
+                color: 'rgba(255, 255, 255, 0.9)',
+                '&:hover': {
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
                 },
-                '100%': {
-                  width: '200%',
-                  height: '200%',
-                  opacity: 0
-                }
-              }
-            }}
-          />
-
-          {/* Decorative gradient orbs */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: -20,
-              right: -20,
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%)',
-              filter: 'blur(15px)',
-              pointerEvents: 'none',
-              animation: 'pulse 2s ease-in-out infinite',
-            }}
-          />
-          <Box
-            sx={{
-              position: 'absolute',
-              top: -20,
-              left: -20,
-              width: 60,
-              height: 60,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%)',
-              filter: 'blur(15px)',
-              pointerEvents: 'none',
-              animation: 'pulse 2s ease-in-out infinite 1s',
-            }}
-          />
-        </Box>
+              }}
+            >
+              ✕
+            </IconButton>
+          </Box>
+        </Paper>
       </Snackbar>
     </Box>
   );

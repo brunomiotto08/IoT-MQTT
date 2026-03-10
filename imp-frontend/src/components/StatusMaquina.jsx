@@ -695,13 +695,13 @@ function StatusMaquina() {
                     <CardContent sx={{ p: 4, textAlign: 'center' }}>
                       <SpeedOutlined sx={{ fontSize: 48, color: '#10b981', mb: 2 }} />
                       <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, letterSpacing: 1.5, display: 'block', mb: 2 }}>
-                        VIBRAÇÃO
+                        PRESSÃO
                       </Typography>
                       <Typography variant="h2" sx={{ color: '#10b981', fontWeight: 900, mb: 1, textShadow: '0 0 20px rgba(16, 185, 129, 0.4)' }}>
                         {liveData.vibracao != null ? parseFloat(liveData.vibracao).toFixed(2) : '-'}
                       </Typography>
                       <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                        mm/s
+                        Pa
                       </Typography>
                     </CardContent>
                   </Card>

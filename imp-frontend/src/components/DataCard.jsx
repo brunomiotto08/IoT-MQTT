@@ -33,7 +33,16 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
     try {
       const savedConfig = localStorage.getItem('imp_thresholds');
       if (savedConfig) {
-        return JSON.parse(savedConfig);
+        const config = JSON.parse(savedConfig);
+        
+        // Migração automática: vibracao -> pressao
+        if (config.vibracao && !config.pressao) {
+          config.pressao = config.vibracao;
+          delete config.vibracao;
+          localStorage.setItem('imp_thresholds', JSON.stringify(config));
+        }
+        
+        return config;
       }
     } catch (err) {
       console.error('Erro ao carregar thresholds:', err);
@@ -42,7 +51,7 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
     // Padrão
     return {
       temperatura: { atenção: 90, critico: 100 },
-      vibracao: { atenção: 5, critico: 8 }
+      pressao: { atenção: 5, critico: 8 }
     };
   };
 
@@ -69,15 +78,15 @@ function DataCard({ title, value, unit, icon, color = 'primary', isStatus = fals
       return 'primary';
     }
     
-    // Vibração
-    if (title.toLowerCase().includes('vibra')) {
+    // Pressão
+    if (title.toLowerCase().includes('pressão') || title.toLowerCase().includes('pressao')) {
       // Verificar MÁXIMOS
-      if (numValue >= thresholds.vibracao.critico) return 'error';
-      if (numValue >= thresholds.vibracao.atenção) return 'warning';
+      if (numValue >= thresholds.pressao.critico) return 'error';
+      if (numValue >= thresholds.pressao.atenção) return 'warning';
       
       // Verificar MÍNIMOS
       if (numValue <= 0.1) return 'error';  // Crítico baixo (máquina parada?)
-      if (numValue <= 0.5) return 'info';   // Azul para vibração muito baixa
+      if (numValue <= 0.5) return 'info';   // Azul para pressão muito baixa
       
       // Normal
       if (numValue >= 3) return 'success';

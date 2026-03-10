@@ -262,7 +262,7 @@ function Ciclos() {
       {
         opposite: true,
         title: {
-          text: 'Vibração (mm/s)',
+          text: 'Pressão (Pa)',
           style: {
             color: '#1e40af',
             fontSize: '14px',
@@ -276,7 +276,7 @@ function Ciclos() {
             fontWeight: 600
           }
         },
-        seriesName: 'Vibração'
+        seriesName: 'Pressão'
       }
     ],
     tooltip: {
@@ -328,7 +328,7 @@ function Ciclos() {
       }))
     },
     {
-      name: 'Vibração',
+      name: 'Pressão',
       data: leiturasCiclo.map(l => ({
         x: new Date(l.created_at).getTime(),
         y: l.vibracao || 0

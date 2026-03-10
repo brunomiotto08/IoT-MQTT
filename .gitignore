@@ -23,5 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
-# Ignora o arquivo de variáveis de ambiente (segredos)
+# Ignora arquivos de variáveis de ambiente (segredos)
 .env
+.env.*
+!.env.example
+
+# Ignora arquivos de credenciais do Supabase
+supabase/API_keys.txt
+supabase/URL.txt
+supabase/connection.txt
+supabase/credentials.txt

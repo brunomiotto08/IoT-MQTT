@@ -174,6 +174,55 @@ function Registros() {
     return 'default';
   };
   
+  // Função para carregar thresholds do localStorage
+  const loadThresholds = () => {
+    try {
+      const savedConfig = localStorage.getItem('imp_thresholds');
+      if (savedConfig) {
+        const config = JSON.parse(savedConfig);
+        
+        // Migração automática: vibracao -> pressao
+        if (config.vibracao && !config.pressao) {
+          config.pressao = config.vibracao;
+          delete config.vibracao;
+          localStorage.setItem('imp_thresholds', JSON.stringify(config));
+        }
+        
+        return config;
+      }
+    } catch (error) {
+      console.error('Erro ao carregar thresholds:', error);
+    }
+    return {
+      temperatura: { min: 20, low: 40, medium: 60, high: 80 },
+      pressao: { min: 0, low: 2, medium: 5, high: 8 },
+      pressao_envelope: { min: 0, low: 2, medium: 4, high: 6 },
+      pressao_saco_ar: { min: 0, low: 2, medium: 4, high: 6 }
+    };
+  };
+  
+  // Função para obter cor baseada no valor e thresholds
+  const getValueColor = (value, type) => {
+    if (value == null) return '#94a3b8'; // Cinza para valores nulos
+    
+    const thresholds = loadThresholds();
+    const config = thresholds[type];
+    
+    if (!config) return '#94a3b8';
+    
+    const numValue = parseFloat(value);
+    
+    if (numValue >= config.high) {
+      return '#ef4444'; // Vermelho - Crítico
+    } else if (numValue >= config.medium) {
+      return '#f59e0b'; // Amarelo - Alerta
+    } else if (numValue >= config.low) {
+      return '#10b981'; // Verde - Normal
+    } else {
+      return '#3b82f6'; // Azul - Baixo
+    }
+  };
+  
   const applyFilters = () => {
     fetchLeituras();
     setPage(0); // Reset para primeira página
@@ -376,7 +425,7 @@ function Registros() {
                   <TableRow>
                     <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Data/Hora</TableCell>
                     <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Temperatura (°C)</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Vibração (mm/s)</TableCell>
+                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Pressão (Pa)</TableCell>
                     <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>P. Envelope (bar)</TableCell>
                     <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>P. Saco Ar (bar)</TableCell>
                     <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Status</TableCell>
@@ -412,16 +461,52 @@ function Registros() {
                             {formatDateTime(leitura.created_at)}
                           </TableCell>
                           <TableCell sx={{ fontSize: '0.85rem' }}>
-                            {leitura.temperatura != null ? parseFloat(leitura.temperatura).toFixed(1) : '-'}
+                            <Box
+                              component="span"
+                              sx={{
+                                fontWeight: 700,
+                                color: getValueColor(leitura.temperatura, 'temperatura'),
+                                transition: 'all 0.3s ease',
+                              }}
+                            >
+                              {leitura.temperatura != null ? parseFloat(leitura.temperatura).toFixed(1) : '-'}
+                            </Box>
                           </TableCell>
                           <TableCell sx={{ fontSize: '0.85rem' }}>
-                            {leitura.vibracao != null ? parseFloat(leitura.vibracao).toFixed(2) : '-'}
+                            <Box
+                              component="span"
+                              sx={{
+                                fontWeight: 700,
+                                color: getValueColor(leitura.vibracao, 'pressao'),
+                                transition: 'all 0.3s ease',
+                              }}
+                            >
+                              {leitura.vibracao != null ? parseFloat(leitura.vibracao).toFixed(2) : '-'}
+                            </Box>
                           </TableCell>
                           <TableCell sx={{ fontSize: '0.85rem' }}>
-                            {leitura.pressao_envelope != null ? parseFloat(leitura.pressao_envelope).toFixed(2) : '-'}
+                            <Box
+                              component="span"
+                              sx={{
+                                fontWeight: 700,
+                                color: getValueColor(leitura.pressao_envelope, 'pressao_envelope'),
+                                transition: 'all 0.3s ease',
+                              }}
+                            >
+                              {leitura.pressao_envelope != null ? parseFloat(leitura.pressao_envelope).toFixed(2) : '-'}
+                            </Box>
                           </TableCell>
                           <TableCell sx={{ fontSize: '0.85rem' }}>
-                            {leitura.pressao_saco_ar != null ? parseFloat(leitura.pressao_saco_ar).toFixed(2) : '-'}
+                            <Box
+                              component="span"
+                              sx={{
+                                fontWeight: 700,
+                                color: getValueColor(leitura.pressao_saco_ar, 'pressao_saco_ar'),
+                                transition: 'all 0.3s ease',
+                              }}
+                            >
+                              {leitura.pressao_saco_ar != null ? parseFloat(leitura.pressao_saco_ar).toFixed(2) : '-'}
+                            </Box>
                           </TableCell>
                           <TableCell>
                             <Chip 
