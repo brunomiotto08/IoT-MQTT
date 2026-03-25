@@ -1,248 +1,126 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import Chart from 'react-apexcharts';
-import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
 
-const gaugeOptions = {
-  chart: { 
-    type: 'radialBar',
-    background: 'transparent',
-    fontFamily: 'Inter, sans-serif',
-    animations: {
-      enabled: true,
-      easing: 'easeinout',
-      speed: 1200,
-      dynamicAnimation: {
-        enabled: true,
-        speed: 800
-      }
-    }
-  },
-  plotOptions: {
-    radialBar: {
-      startAngle: -135,
-      endAngle: 135,
-      hollow: { 
-        size: '65%',
-        background: 'rgba(15, 15, 25, 0.5)',
-        margin: 15,
-      },
-      track: {
-        background: 'rgba(30, 64, 175, 0.1)', // Azul escuro
-        strokeWidth: '100%',
-        margin: 0,
-      },
-      dataLabels: {
-        name: { 
-          show: false 
-        },
-        value: {
-          fontSize: '36px',
-          fontWeight: 800,
-          show: true,
-          formatter: (val) => `${parseFloat(val).toFixed(1)}°C`,
-          color: '#f97316', // Laranja
-          offsetY: 10
-        }
-      }
-    }
-  },
-  fill: { 
-    type: 'gradient',
-    gradient: {
-      shade: 'dark',
-      type: 'horizontal',
-      shadeIntensity: 0.5,
-      gradientToColors: ['#f97316'], // Laranja
-      inverseColors: false,
-      opacityFrom: 1,
-      opacityTo: 1,
-      stops: [0, 100]
-    }
-  },
-  stroke: { 
-    lineCap: 'round',
-    width: 0
-  },
-  labels: ['Temperatura'],
-  colors: ['#1e40af'] // Azul escuro
-};
+function getTemperatureConfig(temp) {
+  if (temp >= 100) return { color: '#ef4444', label: 'Crítico',  track: 'rgba(239,68,68,0.08)' };
+  if (temp >= 90)  return { color: '#f59e0b', label: 'Atenção',  track: 'rgba(245,158,11,0.08)' };
+  if (temp >= 10)  return { color: '#22c55e', label: 'Normal',   track: 'rgba(34,197,94,0.08)'  };
+  if (temp > 0)    return { color: '#3b82f6', label: 'Baixo',    track: 'rgba(59,130,246,0.08)' };
+  return           { color: '#ef4444', label: 'Crítico',  track: 'rgba(239,68,68,0.08)' };
+}
 
 function GaugeChart({ series }) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [prevTemp, setPrevTemp] = useState(series[0] || 0);
-
   const temperature = series[0] || 0;
+  const cfg = getTemperatureConfig(temperature);
 
-  // Detectar mudanças na temperatura
+  const [displayTemp, setDisplayTemp] = useState(temperature);
+
   useEffect(() => {
-    if (temperature !== prevTemp) {
-      setIsUpdating(true);
-      
-      const timer = setTimeout(() => {
-        setPrevTemp(temperature);
-        setIsUpdating(false);
-      }, 400); // Duração do fade out
-      
-      return () => clearTimeout(timer);
-    }
-  }, [temperature, prevTemp]);
+    const t = setTimeout(() => setDisplayTemp(temperature), 150);
+    return () => clearTimeout(t);
+  }, [temperature]);
 
-  const getTemperatureStatus = (temp) => {
-    if (temp >= 80) return { status: 'Crítico', color: 'error' };
-    if (temp >= 60) return { status: 'Alto', color: 'warning' };
-    if (temp >= 40) return { status: 'Normal', color: 'success' };
-    return { status: 'Baixo', color: 'info' };
+  const options = {
+    chart: {
+      type: 'radialBar',
+      background: 'transparent',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 600,
+        dynamicAnimation: { enabled: true, speed: 500 },
+      },
+      sparkline: { enabled: false },
+    },
+    plotOptions: {
+      radialBar: {
+        startAngle: -120,
+        endAngle: 120,
+        hollow: {
+          size: '68%',
+          background: 'transparent',
+          margin: 0,
+        },
+        track: {
+          background: cfg.track,
+          strokeWidth: '100%',
+          margin: 0,
+        },
+        dataLabels: {
+          name: { show: false },
+          value: {
+            show: true,
+            fontSize: '2rem',
+            fontWeight: 700,
+            fontFamily: '"Outfit", sans-serif',
+            color: cfg.color,
+            offsetY: 6,
+            formatter: () => `${displayTemp.toFixed(1)}°`,
+          },
+        },
+      },
+    },
+    fill: { colors: [cfg.color] },
+    stroke: { lineCap: 'round' },
+    labels: ['Temperatura'],
+    states: {
+      hover: { filter: { type: 'none' } },
+      active: { filter: { type: 'none' } },
+    },
   };
 
-  const tempStatus = getTemperatureStatus(temperature);
-
   return (
-    <Card 
-        elevation={0}
-        sx={{ 
-          width: '100%',
-          height: '100%',
-          borderRadius: 4,
-          background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(30, 30, 30, 0.95) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: '2px solid',
-          borderColor: 'rgba(80, 80, 80, 0.3)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6)',
-          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '3px',
-            background: 'linear-gradient(90deg, #1e40af, #f97316)',
-            opacity: 0.8,
-          },
-          '&:hover': {
-            transform: 'translateY(-8px) scale(1.02)',
-            boxShadow: '0 20px 60px rgba(249, 115, 22, 0.4)',
-            borderColor: 'rgba(30, 64, 175, 0.6)',
-          }
-        }}
-      >
-        <CardContent sx={{ p: 5, textAlign: 'center', position: 'relative', zIndex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 4 }}>
-            <ThermostatOutlined 
-              sx={{ 
-                fontSize: 36, 
-                color: '#ffffff',
-                mr: 2
-              }} 
-            />
-            <Typography 
-              variant="h5" 
-              component="h2" 
-              sx={{ 
-                fontFamily: '"Outfit", sans-serif',
-                fontWeight: 800,
-                color: '#ffffff',
-                fontSize: '1.75rem',
-                letterSpacing: '-0.01em',
-              }}
-            >
-              Temperatura Atual
+    <Card elevation={0} sx={{
+      width: '100%',
+      height: '100%',
+      bgcolor: '#161616',
+      border: '1px solid #222',
+      borderRadius: '10px',
+      display: 'flex',
+      flexDirection: 'column',
+    }}>
+      <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="overline" sx={{ color: '#555', fontWeight: 600, letterSpacing: '0.08em', fontSize: '0.7rem' }}>
+            Temperatura Atual
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: cfg.color, transition: 'background 0.4s' }} />
+            <Typography variant="caption" sx={{ color: cfg.color, fontWeight: 700, fontSize: '0.7rem', transition: 'color 0.4s' }}>
+              {cfg.label}
             </Typography>
           </Box>
-          
-          <Box 
-            sx={{ 
-              position: 'relative', 
-              mb: 2,
-              transition: 'opacity 0.4s ease-in-out',
-              opacity: isUpdating ? 0 : 1,
-            }}
-          >
-            <Chart 
-              options={gaugeOptions} 
-              series={series} 
-              type="radialBar" 
-              height={300} 
-            />
-            
-            {/* Status indicator */}
-            <Box 
-              sx={{ 
-                position: 'absolute',
-                bottom: 10,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-                px: 3,
-                py: 1.5,
-                borderRadius: 3,
-                background: 'rgba(15, 15, 25, 0.8)',
-                backdropFilter: 'blur(10px)',
-                border: '1px solid',
-                borderColor: `${tempStatus.color}.main`,
-              }}
-            >
-              <Box 
-                sx={{ 
-                  width: 10,
-                  height: 10,
-                  borderRadius: '50%',
-                  bgcolor: `${tempStatus.color}.main`,
-                  animation: 'pulse 2s infinite',
-                  boxShadow: `0 0 10px ${tempStatus.color}.main`,
-                }} 
-              />
-              <Typography 
-                variant="caption" 
-                color={`${tempStatus.color}.main`}
-                sx={{ fontWeight: 700, fontSize: '0.9rem' }}
-              >
-                {tempStatus.status}
-              </Typography>
-            </Box>
-          </Box>
-          
-          <Typography 
-            variant="body2" 
-            sx={{ 
-              fontSize: '0.9rem', 
-              mt: 4,
-              pt: 3,
-              borderTop: '1px solid',
-              borderColor: 'rgba(80, 80, 80, 0.2)',
-              fontFamily: '"Poppins", sans-serif',
-              fontWeight: 600,
-              color: '#94a3b8',
-            }}
-          >
-            Última leitura em tempo real
-          </Typography>
-        </CardContent>
+        </Box>
 
-        {/* Decorative gradient orb */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -40,
-            right: -40,
-            width: 160,
-            height: 160,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(249, 115, 22, 0.15) 0%, rgba(30, 64, 175, 0.1) 50%, transparent 70%)',
-            filter: 'blur(35px)',
-            pointerEvents: 'none',
-          }}
-        />
-      </Card>
+        {/* Gauge */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', mt: -1 }}>
+          <Box sx={{ width: '100%', maxWidth: 280 }}>
+            <Chart options={options} series={[Math.min((temperature / 120) * 100, 100)]} type="radialBar" height={240} />
+          </Box>
+        </Box>
+
+        {/* Footer */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid #1e1e1e' }}>
+          <Box sx={{ textAlign: 'center', flex: 1 }}>
+            <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block', mb: 0.25 }}>Mín. seguro</Typography>
+            <Typography variant="caption" sx={{ color: '#555', fontWeight: 700, fontSize: '0.75rem' }}>10°C</Typography>
+          </Box>
+          <Box sx={{ width: '1px', bgcolor: '#1e1e1e' }} />
+          <Box sx={{ textAlign: 'center', flex: 1 }}>
+            <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block', mb: 0.25 }}>Atenção</Typography>
+            <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 700, fontSize: '0.75rem' }}>90°C</Typography>
+          </Box>
+          <Box sx={{ width: '1px', bgcolor: '#1e1e1e' }} />
+          <Box sx={{ textAlign: 'center', flex: 1 }}>
+            <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block', mb: 0.25 }}>Crítico</Typography>
+            <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 700, fontSize: '0.75rem' }}>100°C</Typography>
+          </Box>
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
 
 export default GaugeChart;
-
-
-

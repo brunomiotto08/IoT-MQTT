@@ -15,10 +15,8 @@ import {
   LinearProgress,
   Snackbar,
   Alert,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel
+  Tabs,
+  Tab,
 } from '@mui/material';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined';
@@ -33,19 +31,40 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import SettingsIcon from '@mui/icons-material/Settings';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
+import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import { supabase } from '../supabaseClient';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import DataCard from './DataCard';
 import GaugeChart from './GaugeChart';
 import LineChart from './LineChart';
 import soundManager from '../utils/soundManager';
 
+function SectionLabel({ label }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.25 }}>
+      <Typography sx={{
+        fontSize: '0.65rem',
+        fontWeight: 800,
+        textTransform: 'uppercase',
+        letterSpacing: '0.12em',
+        color: '#3d3d3d',
+        fontFamily: '"Outfit", sans-serif',
+        userSelect: 'none',
+      }}>
+        {label}
+      </Typography>
+      <Box sx={{ flex: 1, height: '1px', bgcolor: '#1e1e1e' }} />
+    </Box>
+  );
+}
+
 const socket = io('http://localhost:3000');
 const API_URL = 'http://localhost:3000';
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { maquinaId } = useParams();
   const [liveData, setLiveData] = useState(null);
   const [historicalData, setHistoricalData] = useState([]);
   const [session, setSession] = useState(null);
@@ -59,9 +78,9 @@ function Dashboard() {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationData, setNotificationData] = useState(null);
   
-  // Estados para filtros
+  // Estados para máquinas e filtro
   const [maquinas, setMaquinas] = useState([]);
-  const [maquinaSelecionada, setMaquinaSelecionada] = useState('');
+  const [maquinaSelecionada, setMaquinaSelecionada] = useState(maquinaId || '');
   const [filteredData, setFilteredData] = useState([]);
 
   useEffect(() => {
@@ -348,12 +367,19 @@ function Dashboard() {
     
     try {
       const response = await axios.get(`${API_URL}/api/maquinas`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
+        headers: { 'Authorization': `Bearer ${session.access_token}` }
       });
-      setMaquinas(response.data || []);
-      console.log('✅ Máquinas carregadas:', response.data?.length || 0);
+      const lista = response.data || [];
+      setMaquinas(lista);
+      console.log('✅ Máquinas carregadas:', lista.length);
+
+      // Se veio maquinaId na URL, selecionar; caso contrário, selecionar a primeira
+      if (maquinaId && lista.find(m => m.id === maquinaId)) {
+        setMaquinaSelecionada(maquinaId);
+      } else if (!maquinaSelecionada && lista.length > 0) {
+        setMaquinaSelecionada(lista[0].id);
+        navigate(`/dashboard/${lista[0].id}`, { replace: true });
+      }
     } catch (error) {
       console.error('Erro ao buscar máquinas:', error);
     }
@@ -453,243 +479,66 @@ function Dashboard() {
     }
   ];
 
+  const maquinaAtual = maquinas.find(m => m.id === maquinaSelecionada);
+
   return (
-    <Box sx={{ flexGrow: 1, backgroundColor: 'background.default', minHeight: '100vh' }}>
-      {/* Modern Header */}
-              <AppBar 
-                position="static" 
-                elevation={0} 
-                sx={{ 
-                  background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(30, 30, 30, 0.98) 100%)',
-                  backdropFilter: 'blur(20px)',
-                  borderBottom: '2px solid',
-                  borderColor: 'rgba(30, 64, 175, 0.3)',
-                  animation: 'fadeInUp 0.6s ease-out',
-                }}
-              >
-        <Toolbar sx={{ py: 3, px: 5 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Avatar 
-              sx={{ 
-                background: 'linear-gradient(135deg, #1e40af 0%, #f97316 100%)',
-                mr: 3,
-                width: 64,
-                height: 64,
-                boxShadow: '0 8px 24px rgba(249, 115, 22, 0.4)',
-              }}
-            >
-              <ThermostatOutlined sx={{ fontSize: 36, color: '#ffffff' }} />
-            </Avatar>
-            <Box sx={{ ml: 1 }}>
-              <Typography 
-                variant="h5" 
-                component="div" 
-                sx={{ 
-                  fontFamily: '"Outfit", sans-serif',
-                  fontWeight: 900, 
-                  fontSize: '2rem',
-                  color: '#ffffff',
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                Dashboard AutoClave
-              </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  fontSize: '1rem', 
-                  fontWeight: 500,
-                  fontFamily: '"Poppins", sans-serif',
-                  color: '#94a3b8',
-                }}
-              >
-                {empresaNome ? `${empresaNome} • ` : ''}Monitoramento Industrial em Tempo Real
+    <Box sx={{ flexGrow: 1, bgcolor: '#0f0f0f', minHeight: '100vh' }}>
+      {/* Header */}
+      <AppBar position="static" elevation={0} sx={{ bgcolor: '#111', borderBottom: '1px solid #1e1e1e' }}>
+        <Toolbar sx={{ px: 4, minHeight: '56px !important', gap: 1 }}>
+          {/* Logo / breadcrumb */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mr: 4 }}>
+            <Box sx={{ width: 28, height: 28, bgcolor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ThermostatOutlined sx={{ fontSize: 16, color: '#555' }} />
+            </Box>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#e2e2e2', fontFamily: '"Outfit", sans-serif' }}>
+              {empresaNome || 'IMP'}
+            </Typography>
+            <Typography sx={{ color: '#333', fontSize: '0.875rem' }}>/</Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#888' }}>
+              {maquinaAtual?.nome || 'Dashboard'}
+            </Typography>
+          </Box>
+
+          {/* Nav */}
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1, gap: 0.5 }}>
+            {[
+              { label: 'Visão Geral', icon: <DashboardIcon sx={{ fontSize: 15 }} />, onClick: () => navigate('/') },
+              { label: 'Status', icon: <MonitorHeartIcon sx={{ fontSize: 15 }} />, onClick: () => navigate('/status-maquina') },
+              { label: 'Máquinas', icon: <PrecisionManufacturingIcon sx={{ fontSize: 15 }} />, onClick: () => navigate('/maquinas') },
+              { label: 'Ciclos', icon: <HistoryIcon sx={{ fontSize: 15 }} />, onClick: () => navigate('/ciclos') },
+              { label: 'Registros', icon: <TableChartIcon sx={{ fontSize: 15 }} />, onClick: () => navigate('/registros') },
+              { label: 'Notificações', icon: <NotificationsActiveIcon sx={{ fontSize: 15 }} />, onClick: () => navigate('/notificacoes') },
+            ].map(({ label, icon, onClick }) => (
+              <Button key={label} variant="text" startIcon={icon} onClick={onClick}
+                sx={{ color: '#666', fontWeight: 500, fontSize: '0.8125rem', px: 1.5, py: 0.75, minWidth: 0, borderBottom: '2px solid transparent', borderRadius: 0, '&:hover': { color: '#e2e2e2', background: 'transparent', borderBottomColor: '#3a3a3a' } }}>
+                {label}
+              </Button>
+            ))}
+          </Box>
+
+          {/* Direita */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, px: 1.5, py: 0.5, bgcolor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 1 }}>
+              <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: connectionStatus === 'connected' ? '#22c55e' : '#444' }} />
+              <Typography variant="caption" sx={{ color: connectionStatus === 'connected' ? '#22c55e' : '#555', fontWeight: 600, fontSize: '0.7rem' }}>
+                {connectionStatus === 'connected' ? 'Online' : connectionStatus === 'connecting' ? 'Conectando' : 'Offline'}
               </Typography>
             </Box>
-          </Box>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            {/* Botões de navegação - Ordem lógica */}
-            <Button
-              variant="text"
-              startIcon={<DashboardIcon />}
-              sx={{
-                color: '#ffffff',
-                fontWeight: 700,
-                px: 2,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              Dashboard
-            </Button>
-            
-            <Button
-              variant="text"
-              startIcon={<MonitorHeartIcon />}
-              onClick={() => navigate('/status-maquina')}
-              sx={{
-                color: '#ffffff',
-                fontWeight: 700,
-                px: 2,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              Status
-            </Button>
-            
-            <Button
-              variant="text"
-              startIcon={<HistoryIcon />}
-              onClick={() => navigate('/ciclos')}
-              sx={{
-                color: '#ffffff',
-                fontWeight: 700,
-                px: 2,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              Ciclos
-            </Button>
-            
-            <Button
-              variant="text"
-              startIcon={<TableChartIcon />}
-              onClick={() => navigate('/registros')}
-              sx={{
-                color: '#ffffff',
-                fontWeight: 700,
-                px: 2,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              Registros
-            </Button>
-            
-            <Button
-              variant="text"
-              startIcon={<NotificationsActiveIcon />}
-              onClick={() => navigate('/notificacoes')}
-              sx={{
-                color: '#ffffff',
-                fontWeight: 700,
-                px: 2,
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                }
-              }}
-            >
-              Notificações
-            </Button>
-
-            <Box sx={{ width: 2, height: 40, bgcolor: 'rgba(255, 255, 255, 0.2)', mx: 1 }} />
-            
-            <Chip 
-              label={connectionStatus === 'connected' ? 'Conectado' : 
-                     connectionStatus === 'connecting' ? 'Conectando...' : 'Desconectado'}
-              color={getConnectionColor()}
-              size="medium"
-              variant="filled"
-              icon={
-                <Box 
-                  sx={{ 
-                    width: 10, 
-                    height: 10, 
-                    borderRadius: '50%', 
-                    bgcolor: 'white',
-                    animation: connectionStatus === 'connected' ? 'pulse 2s ease-in-out infinite' : 'none',
-                    marginLeft: '8px',
-                  }} 
-                />
-              }
-              sx={{ 
-                fontFamily: '"Outfit", sans-serif',
-                fontWeight: 800,
-                px: 3,
-                py: 3,
-                fontSize: '0.95rem',
-                color: '#ffffff',
-                '& .MuiChip-label': {
-                  color: '#ffffff',
-                },
-              }}
-            />
-            
             {lastUpdate && (
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  fontWeight: 600,
-                  fontFamily: '"Poppins", sans-serif',
-                  color: '#94a3b8',
-                }}
-              >
+              <Typography variant="caption" sx={{ color: '#444', fontSize: '0.7rem' }}>
                 {lastUpdate.toLocaleTimeString()}
               </Typography>
             )}
-            
-            <IconButton 
-              onClick={handleRefresh} 
-              disabled={isLoading} 
-              sx={{ 
-                width: 52, 
-                height: 52,
-                border: '3px solid',
-                borderColor: 'rgba(30, 64, 175, 0.4)',
-                color: '#ffffff',
-                '&:hover': {
-                  borderColor: '#f97316',
-                  background: 'rgba(249, 115, 22, 0.15)',
-                  transform: 'rotate(180deg)',
-                },
-                transition: 'all 0.4s ease',
-              }}
-            >
-              <RefreshOutlined sx={{ fontSize: 26, color: '#ffffff' }} />
+            <IconButton size="small" onClick={handleRefresh} disabled={isLoading} sx={{ color: '#555', '&:hover': { color: '#aaa' } }}>
+              <RefreshOutlined sx={{ fontSize: 18 }} />
             </IconButton>
-            
-            <IconButton 
-              onClick={() => navigate('/configuracoes')}
-              sx={{ 
-                width: 52, 
-                height: 52,
-                border: '3px solid',
-                borderColor: 'rgba(30, 64, 175, 0.4)',
-                color: '#ffffff',
-                '&:hover': {
-                  borderColor: '#f97316',
-                  background: 'rgba(249, 115, 22, 0.15)',
-                  transform: 'scale(1.1)',
-                },
-                transition: 'all 0.3s ease',
-              }}
-            >
-              <SettingsIcon sx={{ fontSize: 26, color: '#ffffff' }} />
+            <IconButton size="small" onClick={() => navigate('/configuracoes')} sx={{ color: '#555', '&:hover': { color: '#aaa' } }}>
+              <SettingsIcon sx={{ fontSize: 18 }} />
             </IconButton>
-            
-            <Button 
-              variant="outlined" 
-              startIcon={<LogoutOutlined sx={{ fontSize: 22 }} />}
-              onClick={handleLogout}
-              size="large"
-              sx={{ 
-                px: 4,
-                py: 2,
-                borderRadius: 3,
-                fontFamily: '"Outfit", sans-serif',
-                fontWeight: 800,
-                borderWidth: 2,
-                fontSize: '1rem',
-                color: '#ffffff',
-              }}
-            >
+            <Box sx={{ width: 1, height: 24, bgcolor: '#2a2a2a', mx: 0.5 }} />
+            <Button size="small" startIcon={<LogoutOutlined sx={{ fontSize: 14 }} />} onClick={handleLogout}
+              sx={{ color: '#555', fontSize: '0.75rem', fontWeight: 600, px: 1.5, '&:hover': { color: '#aaa' } }}>
               Sair
             </Button>
           </Box>
@@ -699,472 +548,151 @@ function Dashboard() {
       {/* Loading Indicator */}
       {isLoading && <LinearProgress sx={{ height: 3 }} />}
 
-      {/* Filtros */}
-      <Container maxWidth="xl" sx={{ pt: 4, px: 6 }}>
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 3,
-          alignItems: 'center',
-          mb: 3,
-          animation: 'fadeInDown 0.5s ease-out'
-        }}>
-          <FormControl sx={{ minWidth: 280 }} size="small">
-            <InputLabel id="maquina-select-label">Filtrar por Máquina</InputLabel>
-            <Select
-              labelId="maquina-select-label"
-              id="maquina-select"
-              value={maquinaSelecionada}
-              label="Filtrar por Máquina"
-              onChange={(e) => setMaquinaSelecionada(e.target.value)}
-              sx={{
-                backgroundColor: 'background.paper',
-                borderRadius: 2,
-                '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(100, 100, 100, 0.3)',
-                  borderWidth: 2
-                },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(150, 150, 150, 0.5)',
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'primary.main',
-                }
-              }}
-            >
-              <MenuItem value="">
-                <em>Todas as máquinas</em>
-              </MenuItem>
-              {maquinas.map((maquina) => (
-                <MenuItem key={maquina.id} value={maquina.id}>
-                  {maquina.nome} - {maquina.modelo}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          
-          {maquinaSelecionada && (
-            <Chip
-              label={`Filtrando: ${maquinas.find(m => m.id == maquinaSelecionada)?.nome || ''}`}
-              onDelete={() => setMaquinaSelecionada('')}
-              color="primary"
-              variant="outlined"
-              sx={{ 
+      {/* Tabs de máquinas */}
+      {maquinas.length > 0 && (
+        <Box sx={{ bgcolor: '#111', borderBottom: '1px solid #1e1e1e', px: 4 }}>
+          <Tabs
+            value={maquinaSelecionada || false}
+            onChange={(_, val) => { setMaquinaSelecionada(val); navigate(`/dashboard/${val}`); }}
+            variant="scrollable"
+            scrollButtons="auto"
+            TabIndicatorProps={{ style: { background: '#3b82f6', height: 2 } }}
+            sx={{
+              minHeight: 44,
+              '& .MuiTab-root': {
+                color: '#555',
                 fontWeight: 600,
-                fontSize: '0.9rem',
-                animation: 'fadeIn 0.3s ease-out'
-              }}
-            />
-          )}
+                fontSize: '0.8125rem',
+                textTransform: 'none',
+                minHeight: 44,
+                px: 2,
+                '&.Mui-selected': { color: '#e2e2e2' },
+                '&:hover': { color: '#aaa' },
+              },
+            }}
+          >
+            {maquinas.map((m) => (
+              <Tab key={m.id} value={m.id} label={m.nome} />
+            ))}
+          </Tabs>
         </Box>
-      </Container>
+      )}
 
       {/* Main Content */}
-      <Container maxWidth="xl" sx={{ py: 3, px: 6 }}>
-        <Box>
-          {/* Status Overview Cards */}
-          <Grid 
-            container 
-            spacing={3} 
-            sx={{ mb: 6 }}
-            justifyContent="center"
-            alignItems="stretch"
-          >
-            <Grid 
-              item 
-              xs={12} 
-              sm={6} 
-              lg={3}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.1s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <DataCard 
-                title="Temperatura" 
-                value={liveData ? liveData.temperatura?.toFixed(1) : null} 
-                unit="°C"
-                icon={<ThermostatOutlined />}
-                color="primary"
-                threshold={true}
-              />
-            </Grid>
-            <Grid 
-              item 
-              xs={12} 
-              sm={6} 
-              lg={3}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.2s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <DataCard 
-                title="Pressão" 
-                value={liveData ? liveData.vibracao?.toFixed(2) : null} 
-                unit="Pa"
-                icon={<SpeedOutlined />}
-                color="secondary"
-                threshold={true}
-              />
-            </Grid>
-            <Grid 
-              item 
-              xs={12} 
-              sm={6} 
-              lg={3}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.3s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <DataCard 
-                title="Status" 
-                value={liveData ? liveData.status : null} 
-                unit=""
-                icon={<CheckCircleOutlined />}
-                color={getStatusColor(liveData?.status)}
-                isStatus={true}
-              />
-            </Grid>
-            <Grid 
-              item 
-              xs={12} 
-              sm={6} 
-              lg={3}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.4s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <DataCard 
-                title="Peças Produzidas" 
-                value={liveData ? liveData.pecas_produzidas : null} 
-                unit=""
-                icon={<ProductionQuantityLimitsOutlined />}
-                color="success"
-              />
-            </Grid>
-          </Grid>
+      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, md: 4 } }}>
 
-          {/* Charts Section */}
-          <Grid 
-            container 
-            spacing={5}
-            justifyContent="center"
-            alignItems="stretch"
-          >
-            {/* Primeira linha - Gauge e Temperatura */}
-            <Grid 
-              item 
-              xs={12} 
-              md={5}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.5s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <GaugeChart series={gaugeSeries} />
-            </Grid>
-            <Grid 
-              item 
-              xs={12} 
-              md={7}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.6s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <LineChart series={lineSeries} />
-            </Grid>
-            
-            {/* Segunda linha - Pressão e Peças Produzidas */}
-            <Grid 
-              item 
-              xs={12} 
-              md={6}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.7s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <LineChart 
-                series={vibrationSeries} 
-                title="Pressão" 
-                unit="Pa"
-                color="#ff9800"
-              />
-            </Grid>
-            <Grid 
-              item 
-              xs={12} 
-              md={6}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.8s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <LineChart 
-                series={productionSeries} 
-                title="Produção Acumulada" 
-                unit="unidades"
-                color="#4caf50"
-              />
-            </Grid>
-            
-            {/* Terceira linha - Pressões (Envelope e Saco de Ar) */}
-            <Grid 
-              item 
-              xs={12}
-              sx={{ 
-                animation: 'fadeInUp 0.6s ease-out',
-                animationDelay: '0.9s',
-                animationFillMode: 'both',
-                display: 'flex',
-              }}
-            >
-              <LineChart 
-                series={pressureSeries} 
-                title="Pressões - Envelope e Saco de Ar" 
-                unit="bar"
-                color="#2196f3"
-              />
-            </Grid>
+        {/* ── Seção 1: KPIs ─────────────────────────────────── */}
+        <SectionLabel label="Leitura em Tempo Real" />
+        <Grid container spacing={1.5} sx={{ mb: 3 }}>
+          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
+            <DataCard
+              title="Temperatura"
+              value={liveData ? liveData.temperatura?.toFixed(1) : null}
+              unit="°C"
+              icon={<ThermostatOutlined />}
+              threshold={true}
+            />
           </Grid>
-        </Box>
+          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
+            <DataCard
+              title="Pressão"
+              value={liveData ? liveData.vibracao?.toFixed(2) : null}
+              unit="Pa"
+              icon={<SpeedOutlined />}
+              threshold={true}
+            />
+          </Grid>
+          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
+            <DataCard
+              title="Status da Máquina"
+              value={liveData ? liveData.status : null}
+              icon={<CheckCircleOutlined />}
+              isStatus={true}
+            />
+          </Grid>
+          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
+            <DataCard
+              title="Peças Produzidas"
+              value={liveData ? liveData.pecas_produzidas : null}
+              unit="un"
+              icon={<ProductionQuantityLimitsOutlined />}
+            />
+          </Grid>
+        </Grid>
+
+        {/* ── Seção 2: Gauge + Temperatura ──────────────────── */}
+        <SectionLabel label="Temperatura" />
+        <Grid container spacing={1.5} sx={{ mb: 3 }} alignItems="stretch">
+          <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex' }}>
+            <GaugeChart series={gaugeSeries} />
+          </Grid>
+          <Grid item xs={12} md={8} lg={9} sx={{ display: 'flex' }}>
+            <LineChart series={lineSeries} title="Histórico de Temperatura" unit="°C" color="#3b82f6" />
+          </Grid>
+        </Grid>
+
+        {/* ── Seção 3: Pressão + Produção (igual) ───────────── */}
+        <SectionLabel label="Pressão e Produção" />
+        <Grid container spacing={1.5} sx={{ mb: 3 }} alignItems="stretch">
+          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+            <LineChart series={vibrationSeries} title="Pressão" unit="Pa" color="#6366f1" />
+          </Grid>
+          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
+            <LineChart series={productionSeries} title="Produção Acumulada" unit="un" color="#22c55e" />
+          </Grid>
+        </Grid>
+
+        {/* ── Seção 4: Pressões envelope e saco de ar ───────── */}
+        <SectionLabel label="Pressões — Envelope e Saco de Ar" />
+        <Grid container spacing={1.5} sx={{ mb: 2 }}>
+          <Grid item xs={12} sx={{ display: 'flex' }}>
+            <LineChart series={pressureSeries} title="Pressões — Envelope e Saco de Ar" unit="bar" />
+          </Grid>
+        </Grid>
+
       </Container>
       
-      {/* 🎨 NOTIFICAÇÃO PREMIUM - Ultra moderna com cores dinâmicas */}
+      {/* Notificação */}
       <Snackbar
         open={notificationOpen}
         autoHideDuration={8000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        TransitionProps={{
-          enter: true,
-          exit: true,
-        }}
-        sx={{
-          '& .MuiSnackbar-root': {
-            top: '24px !important',
-          }
-        }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
-        <Box
-          sx={{
-            minWidth: 420,
-            maxWidth: 500,
-            background: (() => {
-              const tipoLimite = notificationData?.tipoLimite || 'max';
-              const prioridade = notificationData?.prioridade;
-              
-              // VERMELHO (Crítico - max ou min)
-              if (prioridade === 'critica') {
-                return 'linear-gradient(135deg, rgba(239, 68, 68, 0.98) 0%, rgba(220, 38, 38, 0.98) 100%)';
-              }
-              // LARANJA (Alto - max)
-              if (prioridade === 'alta' && tipoLimite === 'max') {
-                return 'linear-gradient(135deg, rgba(245, 158, 11, 0.98) 0%, rgba(217, 119, 6, 0.98) 100%)';
-              }
-              // AZUL (Alto - min)
-              if (prioridade === 'alta' && tipoLimite === 'min') {
-                return 'linear-gradient(135deg, rgba(59, 130, 246, 0.98) 0%, rgba(37, 99, 235, 0.98) 100%)';
-              }
-              // AMARELO (Médio)
-              if (prioridade === 'media') {
-                return 'linear-gradient(135deg, rgba(251, 191, 36, 0.98) 0%, rgba(245, 158, 11, 0.98) 100%)';
-              }
-              // CINZA (Baixo/Info)
-              return 'linear-gradient(135deg, rgba(100, 116, 139, 0.98) 0%, rgba(71, 85, 105, 0.98) 100%)';
-            })(),
-            backdropFilter: 'blur(20px)',
-            borderRadius: 4,
-            border: '2px solid',
-            borderColor: (() => {
-              const tipoLimite = notificationData?.tipoLimite || 'max';
-              const prioridade = notificationData?.prioridade;
-              
-              if (prioridade === 'critica') return 'rgba(239, 68, 68, 0.8)';
-              if (prioridade === 'alta' && tipoLimite === 'max') return 'rgba(245, 158, 11, 0.8)';
-              if (prioridade === 'alta' && tipoLimite === 'min') return 'rgba(59, 130, 246, 0.8)';
-              if (prioridade === 'media') return 'rgba(251, 191, 36, 0.8)';
-              return 'rgba(100, 116, 139, 0.8)';
-            })(),
-            boxShadow: (() => {
-              const tipoLimite = notificationData?.tipoLimite || 'max';
-              const prioridade = notificationData?.prioridade;
-              
-              if (prioridade === 'critica') {
-                return '0 20px 60px rgba(239, 68, 68, 0.6), 0 0 80px rgba(239, 68, 68, 0.4)';
-              }
-              if (prioridade === 'alta' && tipoLimite === 'max') {
-                return '0 20px 60px rgba(245, 158, 11, 0.6), 0 0 80px rgba(245, 158, 11, 0.4)';
-              }
-              if (prioridade === 'alta' && tipoLimite === 'min') {
-                return '0 20px 60px rgba(59, 130, 246, 0.6), 0 0 80px rgba(59, 130, 246, 0.4)';
-              }
-              if (prioridade === 'media') {
-                return '0 20px 60px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)';
-              }
-              return '0 20px 60px rgba(100, 116, 139, 0.5), 0 0 60px rgba(100, 116, 139, 0.3)';
-            })(),
-            position: 'relative',
-            overflow: 'hidden',
-            animation: 'slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1), pulse 2s ease-in-out infinite',
-            '@keyframes slideInRight': {
-              '0%': {
-                transform: 'translateX(100%)',
-                opacity: 0,
-              },
-              '100%': {
-                transform: 'translateX(0)',
-                opacity: 1,
-              }
-            },
-            '@keyframes pulse': {
-              '0%, 100%': {
-                transform: 'scale(1)',
-              },
-              '50%': {
-                transform: 'scale(1.02)',
-              }
-            },
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: '4px',
-              background: 'rgba(255, 255, 255, 0.4)',
-              animation: 'shimmer 2s ease-in-out infinite',
-            },
-            '@keyframes shimmer': {
-              '0%, 100%': { opacity: 0.4 },
-              '50%': { opacity: 1 }
-            }
-          }}
-        >
-          <Box sx={{ p: 3, position: 'relative', zIndex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-              {/* Ícone Premium */}
-              <Avatar
-                sx={{
-                  bgcolor: 'rgba(255, 255, 255, 0.2)',
-                  border: '2px solid rgba(255, 255, 255, 0.4)',
-                  width: 56,
-                  height: 56,
-                  animation: 'iconPulse 1.5s ease-in-out infinite',
-                  '@keyframes iconPulse': {
-                    '0%, 100%': { transform: 'scale(1)' },
-                    '50%': { transform: 'scale(1.1)' }
-                  }
-                }}
-              >
-                {notificationData?.prioridade === 'critica' ? '🔥' : 
-                 notificationData?.tipoLimite === 'min' ? '❄️' : 
-                 notificationData?.prioridade === 'alta' ? '⚠️' : '🔔'}
-              </Avatar>
-
-              {/* Conteúdo */}
-              <Box sx={{ flex: 1 }}>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    fontFamily: '"Outfit", sans-serif',
-                    fontWeight: 900,
-                    color: '#ffffff',
-                    textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
-                    mb: 1,
-                    letterSpacing: 0.5
-                  }}
-                >
-                  {notificationData?.maquina_nome || 'Nova Notificação'}
-                </Typography>
-                
-                <Typography 
-                  variant="body1"
-                  sx={{ 
-                    fontFamily: '"Poppins", sans-serif',
-                    fontWeight: 500,
-                    color: 'rgba(255, 255, 255, 0.95)',
-                    textShadow: '0 1px 5px rgba(0, 0, 0, 0.2)',
-                    lineHeight: 1.6
-                  }}
-                >
-                  {notificationData?.mensagem || ''}
-                </Typography>
-                
-                {/* Badge de Prioridade */}
-                <Chip
-                  label={
-                    notificationData?.prioridade === 'critica' ? 'CRÍTICO' :
-                    notificationData?.prioridade === 'alta' ? 'ALTO' :
-                    notificationData?.prioridade === 'media' ? 'MÉDIO' : 'INFO'
-                  }
-                  size="small"
-                  sx={{
-                    mt: 2,
-                    bgcolor: 'rgba(255, 255, 255, 0.25)',
-                    color: '#ffffff',
-                    fontWeight: 800,
-                    letterSpacing: 1,
-                    fontSize: '0.7rem',
-                    border: '1px solid rgba(255, 255, 255, 0.4)',
-                    backdropFilter: 'blur(10px)'
-                  }}
-                />
-              </Box>
-
-              {/* Botão Fechar */}
-              <IconButton
-                size="small"
-                onClick={handleCloseNotification}
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  bgcolor: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(10px)',
-                  '&:hover': {
-                    bgcolor: 'rgba(255, 255, 255, 0.25)',
-                    transform: 'rotate(90deg)',
-                  },
-                  transition: 'all 0.3s ease'
-                }}
-              >
-                ✕
-              </IconButton>
-            </Box>
+        <Box sx={{
+          minWidth: 320,
+          bgcolor: '#1a1a1a',
+          border: '1px solid',
+          borderColor: (() => {
+            const p = notificationData?.prioridade;
+            if (p === 'critica') return 'rgba(239,68,68,0.5)';
+            if (p === 'alta') return notificationData?.tipoLimite === 'min' ? 'rgba(59,130,246,0.5)' : 'rgba(245,158,11,0.5)';
+            return '#2a2a2a';
+          })(),
+          borderRadius: '8px',
+          p: 2,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 1.5,
+        }}>
+          <Box sx={{ width: 3, alignSelf: 'stretch', borderRadius: 1, flexShrink: 0, bgcolor: (() => {
+            const p = notificationData?.prioridade;
+            if (p === 'critica') return '#ef4444';
+            if (p === 'alta') return notificationData?.tipoLimite === 'min' ? '#3b82f6' : '#f59e0b';
+            if (p === 'media') return '#f59e0b';
+            return '#555';
+          })() }} />
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: '#d0d0d0', mb: 0.25 }}>
+              {notificationData?.maquina_nome || 'Alerta'}
+            </Typography>
+            <Typography variant="caption" sx={{ color: '#888' }}>
+              {notificationData?.mensagem}
+            </Typography>
           </Box>
-
-          {/* Decorative gradient orb */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: -30,
-              right: -30,
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)',
-              filter: 'blur(20px)',
-              pointerEvents: 'none',
-            }}
-          />
+          <IconButton size="small" onClick={handleCloseNotification} sx={{ color: '#555', '&:hover': { color: '#aaa' }, p: 0.5 }}>
+            ✕
+          </IconButton>
         </Box>
       </Snackbar>
     </Box>

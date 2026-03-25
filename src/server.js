@@ -269,7 +269,15 @@ const {
   buscarCiclosPorData, 
   getLeiturasPorCiclo,
   buscarAlarmes,
-  reconhecerAlarme
+  reconhecerAlarme,
+  getResumoMaquinas,
+  // V2.3 - Rastreabilidade de pneus
+  vincularPneus,
+  encerrarCiclo,
+  buscarCicloPorPneu,
+  getPneusDoCiclo,
+  getCiclosAtivos,
+  getCicloById
 } = require('./services/database');
 
 // Endpoint para listar máquinas da empresa
@@ -299,6 +307,161 @@ app.get('/api/maquinas', async (req, res) => {
     
     console.log(`✅ ${maquinas.length} máquina(s) encontrada(s) para empresa ${vinculo.empresa_id}`);
     res.json(maquinas);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint resumo: todas as máquinas com sua última leitura
+app.get('/api/maquinas/resumo', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+    if (vinculoError || !vinculo) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    const resumo = await getResumoMaquinas(vinculo.empresa_id);
+    res.json(resumo);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para criar uma nova máquina
+app.post('/api/maquinas', async (req, res) => {
+  console.log('🔍 Requisição para criar máquina recebida');
+
+  if (!req.user) {
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id, role')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    const { nome, modelo, uuid_maquina } = req.body;
+
+    if (!nome || !uuid_maquina) {
+      return res.status(400).json({ error: 'Nome e UUID da máquina são obrigatórios' });
+    }
+
+    const { data, error } = await supabase
+      .from('maquinas')
+      .insert([{ nome, modelo, uuid_maquina, empresa_id: vinculo.empresa_id, ativa: true }])
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'UUID da máquina já está em uso' });
+      }
+      console.log('❌ Erro ao criar máquina:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    console.log(`✅ Máquina criada: ${data.nome} (${data.id})`);
+    res.status(201).json(data);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para atualizar uma máquina
+app.put('/api/maquinas/:id', async (req, res) => {
+  console.log('🔍 Requisição para atualizar máquina recebida');
+
+  if (!req.user) {
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { id } = req.params;
+
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    const { nome, modelo, uuid_maquina, ativa } = req.body;
+
+    const { data, error } = await supabase
+      .from('maquinas')
+      .update({ nome, modelo, uuid_maquina, ativa })
+      .eq('id', id)
+      .eq('empresa_id', vinculo.empresa_id)
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'UUID da máquina já está em uso' });
+      }
+      console.log('❌ Erro ao atualizar máquina:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: 'Máquina não encontrada' });
+    }
+
+    console.log(`✅ Máquina atualizada: ${data.nome}`);
+    res.json(data);
+  } catch (err) {
+    console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para excluir uma máquina
+app.delete('/api/maquinas/:id', async (req, res) => {
+  console.log('🔍 Requisição para excluir máquina recebida');
+
+  if (!req.user) {
+    return res.status(401).json({ error: 'Não autorizado' });
+  }
+
+  try {
+    const { id } = req.params;
+
+    const { data: vinculo, error: vinculoError } = await supabase
+      .from('usuarios_empresas')
+      .select('empresa_id')
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (vinculoError || !vinculo) {
+      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    }
+
+    const { error } = await supabase
+      .from('maquinas')
+      .delete()
+      .eq('id', id)
+      .eq('empresa_id', vinculo.empresa_id);
+
+    if (error) {
+      console.log('❌ Erro ao excluir máquina:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    console.log(`✅ Máquina ${id} excluída`);
+    res.json({ success: true });
   } catch (err) {
     console.log('❌ Erro na requisição:', err);
     res.status(500).json({ error: err.message });
@@ -356,46 +519,100 @@ app.get('/api/ciclos', async (req, res) => {
   }
 });
 
-// Endpoint para buscar leituras de um ciclo específico
-app.get('/api/ciclos/:id/leituras', async (req, res) => {
-  console.log('🔍 Requisição para /api/ciclos/:id/leituras recebida');
-  
-  if (!req.user) {
-    console.log('❌ Usuário não autenticado');
-    return res.status(401).json({ error: 'Não autorizado' });
-  }
+// --- ROTAS V2.3 - RASTREABILIDADE DE PNEUS (estáticas, devem vir antes de /:id) ---
 
+// Helper: busca empresa_id do usuário autenticado
+async function getEmpresaId(userId) {
+  const { data: vinculo, error } = await supabase
+    .from('usuarios_empresas')
+    .select('empresa_id')
+    .eq('user_id', userId)
+    .single();
+  if (error || !vinculo) return null;
+  return vinculo.empresa_id;
+}
+
+// Buscar ciclos ativos da empresa
+app.get('/api/ciclos/ativos', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    const ciclos = await getCiclosAtivos(empresaId);
+    res.json(ciclos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Buscar ciclo(s) por código de pneu
+app.get('/api/ciclos/buscar-pneu', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const { codigo } = req.query;
+    if (!codigo) return res.status(400).json({ error: 'Parâmetro "codigo" é obrigatório' });
+
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+
+    const ciclos = await buscarCicloPorPneu(codigo, empresaId);
+    res.json(ciclos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Vincular pneus a um ciclo ativo (operador registra pneus de um ciclo aberto pelo CLP)
+app.post('/api/ciclos/:id/pneus', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
   try {
     const { id } = req.params;
-    
-    // Buscar a empresa_id do usuário
-    const { data: vinculo, error: vinculoError } = await supabase
-      .from('usuarios_empresas')
-      .select('empresa_id')
-      .eq('user_id', req.user.id)
-      .single();
+    const { codigos } = req.body; // array de strings
 
-    if (vinculoError || !vinculo) {
-      console.log('❌ Usuário não vinculado a nenhuma empresa');
-      return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    if (!codigos || !Array.isArray(codigos) || codigos.length === 0) {
+      return res.status(400).json({ error: 'Campo "codigos" deve ser um array não vazio' });
     }
 
-    // Validar se o ciclo pertence à empresa do usuário
-    const ciclos = await buscarCiclosPorData(vinculo.empresa_id);
-    const cicloValido = ciclos.find(c => c.id === id);
-    
-    if (!cicloValido) {
-      console.log('❌ Ciclo não encontrado ou não pertence à empresa');
-      return res.status(404).json({ error: 'Ciclo não encontrado' });
-    }
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
 
-    // Buscar as leituras do ciclo
-    const leituras = await getLeiturasPorCiclo(id, vinculo.empresa_id);
-    
-    console.log(`✅ ${leituras.length} leitura(s) encontrada(s) para ciclo ${id}`);
+    const inseridos = await vincularPneus(id, empresaId, codigos);
+    console.log(`✅ ${inseridos.length} pneu(s) vinculado(s) ao ciclo ${id}`);
+    res.status(201).json(inseridos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Buscar um ciclo específico pelo ID
+app.get('/api/ciclos/:id', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const { id } = req.params;
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+    const ciclo = await getCicloById(id, empresaId);
+    if (!ciclo) return res.status(404).json({ error: 'Ciclo não encontrado' });
+    res.json(ciclo);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Endpoint para buscar leituras de um ciclo específico
+app.get('/api/ciclos/:id/leituras', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const { id } = req.params;
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+
+    const cicloValido = await getCicloById(id, empresaId);
+    if (!cicloValido) return res.status(404).json({ error: 'Ciclo não encontrado' });
+
+    const leituras = await getLeiturasPorCiclo(id, empresaId);
     res.json(leituras);
   } catch (err) {
-    console.log('❌ Erro na requisição:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -477,6 +694,41 @@ app.post('/api/alarmes/:id/reconhecer', async (req, res) => {
     res.json(alarmeAtualizado);
   } catch (err) {
     console.log('❌ Erro na requisição:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Encerrar ciclo específico
+app.put('/api/ciclos/:id/encerrar', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const { id } = req.params;
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+
+    const ciclo = await encerrarCiclo(id, empresaId);
+    if (!ciclo) {
+      return res.status(404).json({ error: 'Ciclo não encontrado ou já encerrado' });
+    }
+
+    console.log(`✅ Ciclo ${id} encerrado`);
+    res.json(ciclo);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Listar pneus de um ciclo específico
+app.get('/api/ciclos/:id/pneus', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Não autorizado' });
+  try {
+    const { id } = req.params;
+    const empresaId = await getEmpresaId(req.user.id);
+    if (!empresaId) return res.status(403).json({ error: 'Usuário não vinculado a empresa' });
+
+    const pneus = await getPneusDoCiclo(id, empresaId);
+    res.json(pneus);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });

@@ -112,24 +112,178 @@ async function getCicloAtivo(maquinaId) {
 }
 
 /**
- * Criar um novo ciclo de produção
+ * Criar um novo ciclo de produção (disparado via MQTT)
+ * Calcula automaticamente o numero_ciclo sequencial por máquina.
  * @param {object} dados - { maquina_id, empresa_id, contagem_producao }
  * @returns {object|null} Objeto do ciclo criado ou null em caso de erro
  */
 async function criarCiclo(dados) {
-  const insertQuery = `
-    INSERT INTO ciclos_producao(maquina_id, empresa_id, status, contagem_producao) 
-    VALUES($1, $2, 'ativo', $3) 
-    RETURNING *
-  `;
-  const values = [dados.maquina_id, dados.empresa_id, dados.contagem_producao || 0];
+  const client = await pool.connect();
   try {
-    const result = await pool.query(insertQuery, values);
-    console.log(`✅ Ciclo criado: ${result.rows[0].id} para máquina ${dados.maquina_id}`);
-    return result.rows[0];
+    await client.query('BEGIN');
+
+    const numResult = await client.query(
+      `SELECT COALESCE(MAX(numero_ciclo), 0) + 1 AS proximo FROM ciclos_producao WHERE maquina_id = $1`,
+      [dados.maquina_id]
+    );
+    const numeroCiclo = numResult.rows[0].proximo;
+
+    const insertResult = await client.query(
+      `INSERT INTO ciclos_producao(maquina_id, empresa_id, status, contagem_producao, numero_ciclo) 
+       VALUES($1, $2, 'ativo', $3, $4) RETURNING *`,
+      [dados.maquina_id, dados.empresa_id, dados.contagem_producao || 0, numeroCiclo]
+    );
+
+    await client.query('COMMIT');
+    console.log(`✅ Ciclo ${numeroCiclo} criado: ${insertResult.rows[0].id} para máquina ${dados.maquina_id}`);
+    return insertResult.rows[0];
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('❌ Erro ao criar ciclo:', err.stack);
     return null;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Vincular pneus a um ciclo existente
+ * @param {string} cicloId - UUID do ciclo
+ * @param {string} empresaId - UUID da empresa
+ * @param {string[]} listaCodigos - Array de códigos de pneu
+ * @returns {array} Array de pneus inseridos
+ */
+async function vincularPneus(cicloId, empresaId, listaCodigos) {
+  const inseridos = [];
+  for (const codigo of listaCodigos) {
+    const codigoLimpo = codigo.trim();
+    if (!codigoLimpo) continue;
+    try {
+      const result = await pool.query(
+        `INSERT INTO pneus_ciclo(ciclo_id, empresa_id, codigo_pneu) VALUES($1, $2, $3) RETURNING *`,
+        [cicloId, empresaId, codigoLimpo]
+      );
+      inseridos.push(result.rows[0]);
+    } catch (err) {
+      console.error(`❌ Erro ao vincular pneu ${codigoLimpo}:`, err.stack);
+    }
+  }
+  return inseridos;
+}
+
+/**
+ * Encerrar um ciclo específico por ID (chamado pela UI)
+ * @param {string} cicloId - UUID do ciclo
+ * @param {string} empresaId - UUID da empresa (validação de segurança)
+ * @returns {object|null} Ciclo encerrado ou null
+ */
+async function encerrarCiclo(cicloId, empresaId) {
+  const updateQuery = `
+    UPDATE ciclos_producao 
+    SET status = 'concluido', end_time = NOW() 
+    WHERE id = $1 AND empresa_id = $2 AND status = 'ativo'
+    RETURNING *
+  `;
+  try {
+    const result = await pool.query(updateQuery, [cicloId, empresaId]);
+    if (result.rows.length > 0) {
+      console.log(`✅ Ciclo ${cicloId} encerrado`);
+      return result.rows[0];
+    }
+    console.log(`⚠️ Ciclo ${cicloId} não encontrado ou já encerrado`);
+    return null;
+  } catch (err) {
+    console.error('❌ Erro ao encerrar ciclo:', err.stack);
+    return null;
+  }
+}
+
+/**
+ * Buscar ciclo(s) pelo código de um pneu
+ * @param {string} codigoPneu - Código do pneu a ser pesquisado
+ * @param {string} empresaId - UUID da empresa
+ * @returns {array} Array de ciclos que contêm o pneu
+ */
+async function buscarCicloPorPneu(codigoPneu, empresaId) {
+  const query = `
+    SELECT 
+      c.*,
+      m.nome AS maquina_nome,
+      m.modelo AS maquina_modelo,
+      EXTRACT(EPOCH FROM (COALESCE(c.end_time, NOW()) - c.start_time)) / 60 AS duracao_minutos,
+      p.codigo_pneu
+    FROM pneus_ciclo p
+    JOIN ciclos_producao c ON p.ciclo_id = c.id
+    JOIN maquinas m ON c.maquina_id = m.id
+    WHERE p.empresa_id = $1 AND UPPER(p.codigo_pneu) LIKE UPPER($2)
+    ORDER BY c.start_time DESC
+  `;
+  try {
+    const result = await pool.query(query, [empresaId, `%${codigoPneu}%`]);
+    return result.rows;
+  } catch (err) {
+    console.error('❌ Erro ao buscar ciclo por pneu:', err.stack);
+    return [];
+  }
+}
+
+/**
+ * Listar os pneus de um ciclo específico
+ * @param {string} cicloId - UUID do ciclo
+ * @param {string} empresaId - UUID da empresa
+ * @returns {array} Array de pneus
+ */
+async function getPneusDoCiclo(cicloId, empresaId) {
+  const query = `
+    SELECT * FROM pneus_ciclo 
+    WHERE ciclo_id = $1 AND empresa_id = $2 
+    ORDER BY created_at ASC
+  `;
+  try {
+    const result = await pool.query(query, [cicloId, empresaId]);
+    return result.rows;
+  } catch (err) {
+    console.error('❌ Erro ao buscar pneus do ciclo:', err.stack);
+    return [];
+  }
+}
+
+/**
+ * Buscar ciclos ativos de todas as máquinas de uma empresa
+ * @param {string} empresaId - UUID da empresa
+ * @returns {array} Array de ciclos ativos com dados da máquina
+ */
+async function getCiclosAtivos(empresaId) {
+  const query = `
+    SELECT 
+      c.*,
+      m.nome AS maquina_nome,
+      m.modelo AS maquina_modelo,
+      EXTRACT(EPOCH FROM (NOW() - c.start_time)) / 60 AS duracao_minutos,
+      (SELECT COUNT(*) FROM pneus_ciclo p WHERE p.ciclo_id = c.id) AS total_pneus,
+      lv.temperatura AS ultima_temperatura,
+      lv.pressao_envelope AS ultima_pressao_envelope,
+      lv.pressao_saco_ar AS ultima_pressao_saco_ar,
+      lv.status AS ultimo_status,
+      lv.created_at AS ultima_leitura_at
+    FROM ciclos_producao c
+    JOIN maquinas m ON c.maquina_id = m.id
+    LEFT JOIN LATERAL (
+      SELECT temperatura, pressao_envelope, pressao_saco_ar, status, created_at
+      FROM leituras_maquina
+      WHERE maquina_id = c.maquina_id AND ciclo_id = c.id
+      ORDER BY created_at DESC
+      LIMIT 1
+    ) lv ON true
+    WHERE c.empresa_id = $1 AND c.status = 'ativo'
+    ORDER BY c.start_time DESC
+  `;
+  try {
+    const result = await pool.query(query, [empresaId]);
+    return result.rows;
+  } catch (err) {
+    console.error('❌ Erro ao buscar ciclos ativos:', err.stack);
+    return [];
   }
 }
 
@@ -216,7 +370,8 @@ async function buscarCiclosPorData(empresaId, maquinaId, dataInicio, dataFim) {
       c.*,
       m.nome as maquina_nome,
       m.modelo as maquina_modelo,
-      EXTRACT(EPOCH FROM (COALESCE(c.end_time, NOW()) - c.start_time)) / 60 as duracao_minutos
+      EXTRACT(EPOCH FROM (COALESCE(c.end_time, NOW()) - c.start_time)) / 60 as duracao_minutos,
+      (SELECT COUNT(*) FROM pneus_ciclo p WHERE p.ciclo_id = c.id) AS total_pneus
     FROM ciclos_producao c
     JOIN maquinas m ON c.maquina_id = m.id
     WHERE c.empresa_id = $1
@@ -250,6 +405,31 @@ async function buscarCiclosPorData(empresaId, maquinaId, dataInicio, dataFim) {
   } catch (err) {
     console.error('❌ Erro ao buscar ciclos por data:', err.stack);
     return [];
+  }
+}
+
+/**
+ * Buscar um ciclo específico pelo ID
+ */
+async function getCicloById(cicloId, empresaId) {
+  const query = `
+    SELECT 
+      c.*,
+      m.nome AS maquina_nome,
+      m.modelo AS maquina_modelo,
+      EXTRACT(EPOCH FROM (COALESCE(c.end_time, NOW()) - c.start_time)) / 60 AS duracao_minutos,
+      (SELECT COUNT(*) FROM pneus_ciclo p WHERE p.ciclo_id = c.id) AS total_pneus
+    FROM ciclos_producao c
+    JOIN maquinas m ON c.maquina_id = m.id
+    WHERE c.id = $1 AND c.empresa_id = $2
+    LIMIT 1
+  `;
+  try {
+    const result = await pool.query(query, [cicloId, empresaId]);
+    return result.rows[0] || null;
+  } catch (err) {
+    console.error('❌ Erro ao buscar ciclo por ID:', err.stack);
+    return null;
   }
 }
 
@@ -349,10 +529,36 @@ async function reconhecerAlarme(alarmeId, userId, empresaId) {
   }
 }
 
+/**
+ * Buscar resumo de todas as máquinas com sua última leitura
+ * @param {string} empresaId
+ * @returns {array} Máquinas com campo ultima_leitura
+ */
+async function getResumoMaquinas(empresaId) {
+  const query = `
+    SELECT DISTINCT ON (m.id)
+      m.id, m.nome, m.modelo, m.uuid_maquina, m.ativa, m.empresa_id,
+      l.temperatura, l.vibracao, l.status, l.pecas_produzidas,
+      l.pressao_envelope, l.pressao_saco_ar,
+      l.created_at AS ultima_leitura
+    FROM maquinas m
+    LEFT JOIN leituras_maquina l ON l.maquina_id = m.id
+    WHERE m.empresa_id = $1
+    ORDER BY m.id, l.created_at DESC
+  `;
+  try {
+    const result = await pool.query(query, [empresaId]);
+    return result.rows;
+  } catch (err) {
+    console.error('❌ Erro ao buscar resumo de máquinas:', err.stack);
+    return [];
+  }
+}
+
 module.exports = { 
   saveReading, 
   getRecentReadings,
-  // Novas funções V2.1
+  // Funções V2.1
   getMaquinaPorUUID,
   getCicloAtivo,
   criarCiclo,
@@ -362,7 +568,15 @@ module.exports = {
   buscarCiclosPorData,
   getLeiturasPorCiclo,
   buscarAlarmes,
-  reconhecerAlarme
+  reconhecerAlarme,
+  getResumoMaquinas,
+  // Funções V2.3 - Rastreabilidade de pneus
+  vincularPneus,
+  encerrarCiclo,
+  buscarCicloPorPneu,
+  getPneusDoCiclo,
+  getCiclosAtivos,
+  getCicloById
 };
 
 

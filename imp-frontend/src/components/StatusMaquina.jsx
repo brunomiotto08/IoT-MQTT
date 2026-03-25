@@ -357,98 +357,29 @@ function StatusMaquina() {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, backgroundColor: 'background.default', minHeight: '100vh' }}>
+    <Box sx={{ flexGrow: 1, bgcolor: '#0f0f0f', minHeight: '100vh' }}>
       {/* Header */}
-      <AppBar 
-        position="static" 
-        elevation={0} 
-        sx={{ 
-          background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(30, 30, 30, 0.98) 100%)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '2px solid',
-          borderColor: 'rgba(80, 80, 80, 0.3)',
-        }}
-      >
-        <Toolbar sx={{ py: 3, px: 5 }}>
-          <IconButton 
-            edge="start" 
-            color="inherit" 
-            onClick={() => navigate('/')}
-            sx={{ mr: 2 }}
-          >
-            <ArrowBackIcon />
+      <AppBar position="static" elevation={0}>
+        <Toolbar sx={{ px: 4, minHeight: '56px !important', gap: 1 }}>
+          <IconButton edge="start" size="small" onClick={() => navigate('/')} sx={{ color: '#666', mr: 1, '&:hover': { color: '#aaa' } }}>
+            <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
-          
-          <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-            <Avatar 
-              sx={{ 
-                background: 'linear-gradient(135deg, #505050 0%, #707070 100%)',
-                mr: 3,
-                width: 64,
-                height: 64,
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.6)',
-              }}
-            >
-              <SettingsIcon sx={{ fontSize: 36, color: '#ffffff' }} />
-            </Avatar>
-            <Box sx={{ ml: 1 }}>
-              <Typography 
-                variant="h5" 
-                component="div" 
-                sx={{ 
-                  fontFamily: '"Outfit", sans-serif',
-                  fontWeight: 900, 
-                  fontSize: '2rem',
-                  color: '#ffffff',
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                Status da Máquina
-              </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  fontSize: '1rem', 
-                  fontWeight: 500,
-                  fontFamily: '"Poppins", sans-serif',
-                  color: '#94a3b8',
-                }}
-              >
-                {empresaNome ? `${empresaNome} • ` : ''}Monitoramento em Tempo Real dos Componentes
-              </Typography>
-            </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#888', fontFamily: '"Outfit", sans-serif' }}>
+              {empresaNome || 'IMP'}
+            </Typography>
+            <Typography sx={{ color: '#333' }}>/</Typography>
+            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#e2e2e2' }}>
+              Status da Máquina
+            </Typography>
           </Box>
-          
           {lastUpdate && (
-            <Typography 
-              variant="body2" 
-              sx={{ 
-                fontWeight: 600,
-                fontFamily: '"Poppins", sans-serif',
-                color: '#94a3b8',
-                mr: 3
-              }}
-            >
-              Última atualização: {lastUpdate.toLocaleTimeString()}
+            <Typography variant="caption" sx={{ color: '#444', mr: 1 }}>
+              {lastUpdate.toLocaleTimeString()}
             </Typography>
           )}
-          
-          <Button 
-            variant="outlined" 
-            startIcon={<LogoutOutlined sx={{ fontSize: 22 }} />}
-            onClick={handleLogout}
-            size="large"
-            sx={{ 
-              px: 4,
-              py: 2,
-              borderRadius: 3,
-              fontFamily: '"Outfit", sans-serif',
-              fontWeight: 800,
-              borderWidth: 2,
-              fontSize: '1rem',
-              color: '#ffffff',
-            }}
-          >
+          <Button size="small" startIcon={<LogoutOutlined sx={{ fontSize: 14 }} />} onClick={handleLogout}
+            sx={{ color: '#555', fontSize: '0.75rem', fontWeight: 600, px: 1.5, '&:hover': { color: '#aaa' } }}>
             Sair
           </Button>
         </Toolbar>

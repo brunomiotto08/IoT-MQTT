@@ -5,12 +5,15 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { supabase } from './supabaseClient';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
+import DashboardOverview from './components/DashboardOverview';
 import Dashboard from './components/Dashboard';
 import Ciclos from './components/Ciclos';
 import Notificacoes from './components/Notificacoes';
 import Configuracoes from './components/Configuracoes';
 import Registros from './components/Registros';
 import StatusMaquina from './components/StatusMaquina';
+import Maquinas from './components/Maquinas';
+import CicloMonitor from './components/CicloMonitor';
 import { Box, CircularProgress } from '@mui/material';
 import theme from './theme';
 
@@ -46,7 +49,8 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Routes>
-        <Route path="/" element={!session ? <Navigate to="/login" /> : <Dashboard />} />
+        <Route path="/" element={!session ? <Navigate to="/login" /> : <DashboardOverview />} />
+        <Route path="/dashboard/:maquinaId" element={!session ? <Navigate to="/login" /> : <Dashboard />} />
         <Route path="/login" element={!session ? <Login /> : <Navigate to="/" />} />
         <Route path="/signup" element={!session ? <SignUp /> : <Navigate to="/" />} />
         <Route path="/ciclos" element={!session ? <Navigate to="/login" /> : <Ciclos />} />
@@ -54,6 +58,8 @@ function App() {
         <Route path="/configuracoes" element={!session ? <Navigate to="/login" /> : <Configuracoes />} />
         <Route path="/registros" element={!session ? <Navigate to="/login" /> : <Registros />} />
         <Route path="/status-maquina" element={!session ? <Navigate to="/login" /> : <StatusMaquina />} />
+        <Route path="/maquinas" element={!session ? <Navigate to="/login" /> : <Maquinas />} />
+        <Route path="/ciclo/:id" element={!session ? <Navigate to="/login" /> : <CicloMonitor />} />
       </Routes>
     </ThemeProvider>
   );

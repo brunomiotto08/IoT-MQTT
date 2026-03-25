@@ -201,29 +201,14 @@ function Configuracoes() {
   };
 
   return (
-    <Box sx={{ flexGrow: 1, backgroundColor: 'background.default', minHeight: '100vh' }}>
+    <Box sx={{ flexGrow: 1, bgcolor: '#0f0f0f', minHeight: '100vh' }}>
       {/* Header */}
-      <AppBar 
-        position="static" 
-        elevation={0} 
-        sx={{ 
-          background: 'linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(30, 30, 30, 0.98) 100%)',
-          backdropFilter: 'blur(20px)',
-          borderBottom: '2px solid',
-          borderColor: 'rgba(80, 80, 80, 0.3)'
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            onClick={() => navigate('/')}
-            sx={{ mr: 2 }}
-          >
-            <ArrowBackIcon />
+      <AppBar position="static" elevation={0}>
+        <Toolbar sx={{ px: 4, minHeight: '56px !important' }}>
+          <IconButton edge="start" size="small" onClick={() => navigate('/')} sx={{ color: '#666', mr: 2, '&:hover': { color: '#aaa' } }}>
+            <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
-          <SettingsIcon sx={{ fontSize: 32, mr: 2 }} />
-          <Typography variant="h5" component="div" sx={{ flexGrow: 1, fontWeight: 900 }}>
+          <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: '#e2e2e2', fontFamily: '"Outfit", sans-serif', flex: 1 }}>
             Configurações do Sistema
           </Typography>
         </Toolbar>

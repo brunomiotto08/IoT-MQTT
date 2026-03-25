@@ -61,8 +61,8 @@ function initializeMqttClient(io) {
         return;
       }
 
-      if (maquina.empresa_id !== empresaId) {
-        console.error(`❌ Máquina ${uuidMaquina} não pertence à empresa ${empresaId}.`);
+      if (String(maquina.empresa_id) !== String(empresaId)) {
+        console.error(`❌ Máquina ${uuidMaquina} não pertence à empresa ${empresaId}. (DB: ${maquina.empresa_id})`);
         return;
       }
 
@@ -76,11 +76,11 @@ function initializeMqttClient(io) {
           break;
         
         case 'ciclo/start':
-          await processarCicloStart(maquinaId, empresaId, messageStr);
+          await processarCicloStart(maquinaId, empresaId, messageStr, io, maquina.nome);
           break;
         
         case 'ciclo/end':
-          await processarCicloEnd(maquinaId, empresaId);
+          await processarCicloEnd(maquinaId, empresaId, io, maquina.nome);
           break;
         
         case 'alarme':
@@ -334,31 +334,47 @@ async function verificarThresholds(dados, maquinaId, empresaId, io, maquinaNome)
 
 /**
  * Processar início de ciclo de produção
+ * Aceita qualquer payload: boolean (true/1), string simples ou JSON com contagem_producao opcional.
  */
-async function processarCicloStart(maquinaId, empresaId, payloadStr) {
+async function processarCicloStart(maquinaId, empresaId, payloadStr, io, maquinaNome) {
   try {
-    const dados = JSON.parse(payloadStr);
-    
-    // Opcional: Fechar qualquer ciclo que tenha ficado aberto
-    const ciclosAbertos = await getCicloAtivo(maquinaId);
-    if (ciclosAbertos) {
-      console.log(`⚠️ Existe um ciclo ativo para máquina ${maquinaId}. Fechando antes de criar novo...`);
+    let contagemProducao = 0;
+    try {
+      const parsed = JSON.parse(payloadStr);
+      if (typeof parsed === 'object' && parsed !== null) {
+        contagemProducao = parsed.contagem_producao || 0;
+      }
+      // se parsed === true / false / número, contagemProducao permanece 0
+    } catch {
+      // payload não é JSON válido (ex: "true", "1", "on") — ok, usar contagem 0
+    }
+
+    // Fechar ciclo órfão caso exista
+    const cicloAberto = await getCicloAtivo(maquinaId);
+    if (cicloAberto) {
+      console.log(`⚠️ Ciclo ativo encontrado para máquina ${maquinaId}. Fechando antes de criar novo...`);
       await fecharCiclosAtivos(maquinaId);
     }
-    
+
     // Criar o novo ciclo
     const novoCiclo = await criarCiclo({
       maquina_id: maquinaId,
       empresa_id: empresaId,
-      contagem_producao: dados.contagem_producao || 0
+      contagem_producao: contagemProducao
     });
-    
+
     if (novoCiclo) {
-      console.log(`✅ Ciclo ${novoCiclo.id} iniciado para máquina ${maquinaId}`);
+      console.log(`✅ Ciclo ${novoCiclo.numero_ciclo} iniciado: ${novoCiclo.id} para máquina ${maquinaId}`);
       console.log(`   Start time: ${novoCiclo.start_time}`);
-      console.log(`   Contagem inicial: ${novoCiclo.contagem_producao}`);
+
+      // Notificar UI via WebSocket
+      io.to(`empresa_${empresaId}`).emit('ciclo_iniciado', {
+        ciclo: novoCiclo,
+        maquina_id: maquinaId,
+        maquina_nome: maquinaNome || `Máquina ${maquinaId}`
+      });
     }
-    
+
   } catch (err) {
     console.error('❌ Erro ao processar início de ciclo:', err);
   }
@@ -367,22 +383,28 @@ async function processarCicloStart(maquinaId, empresaId, payloadStr) {
 /**
  * Processar fim de ciclo de produção
  */
-async function processarCicloEnd(maquinaId, empresaId) {
+async function processarCicloEnd(maquinaId, empresaId, io, maquinaNome) {
   try {
-    // Encontrar e fechar o ciclo ativo
     const cicloFechado = await fecharCiclosAtivos(maquinaId);
-    
+
     if (cicloFechado) {
       const duracao = new Date(cicloFechado.end_time) - new Date(cicloFechado.start_time);
       const duracaoMinutos = Math.round(duracao / 1000 / 60);
-      
+
       console.log(`✅ Ciclo ${cicloFechado.id} finalizado para máquina ${maquinaId}`);
       console.log(`   Duração: ${duracaoMinutos} minutos`);
-      console.log(`   Contagem final: ${cicloFechado.contagem_producao}`);
+
+      // Notificar UI via WebSocket
+      io.to(`empresa_${empresaId}`).emit('ciclo_encerrado', {
+        ciclo: cicloFechado,
+        maquina_id: maquinaId,
+        maquina_nome: maquinaNome || `Máquina ${maquinaId}`,
+        duracao_minutos: duracaoMinutos
+      });
     } else {
       console.log(`⚠️ Nenhum ciclo ativo encontrado para fechar na máquina ${maquinaId}`);
     }
-    
+
   } catch (err) {
     console.error('❌ Erro ao processar fim de ciclo:', err);
   }
