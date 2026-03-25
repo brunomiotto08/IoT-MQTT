@@ -34,7 +34,7 @@ import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
 import FilterListIcon from '@mui/icons-material/FilterList';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Registros() {
   const navigate = useNavigate();

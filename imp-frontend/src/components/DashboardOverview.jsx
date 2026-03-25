@@ -27,7 +27,7 @@ import soundManager from '../utils/soundManager';
 
 const CICLO_DURACAO_MIN = 120;
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const STATUS_COLOR = {
   ok:      '#22c55e',

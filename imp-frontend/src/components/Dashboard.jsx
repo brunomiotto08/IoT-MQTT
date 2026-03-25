@@ -60,7 +60,7 @@ function SectionLabel({ label }) {
 }
 
 const socket = io('http://localhost:3000');
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function Dashboard() {
   const navigate = useNavigate();

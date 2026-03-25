@@ -42,7 +42,7 @@ import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import { useNavigate } from 'react-router-dom';
 import ReactApexChart from 'react-apexcharts';
 
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // ─────────────────────────────────────────
 // Modal: Gerenciar pneus de um ciclo ativo

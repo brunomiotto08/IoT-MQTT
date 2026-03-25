@@ -40,7 +40,7 @@ import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import ProductionQuantityLimitsOutlined from '@mui/icons-material/ProductionQuantityLimitsOutlined';
 
 const socket = io('http://localhost:3000');
-const API_URL = 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function StatusMaquina() {
   const navigate = useNavigate();

@@ -36,7 +36,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-const BACKEND_URL = 'http://localhost:3000';
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const EMPTY_FORM = { nome: '', modelo: '', uuid_maquina: '', ativa: true };
 

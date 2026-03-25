@@ -47,13 +47,28 @@ function SignUp() {
       });
 
       if (authError) {
-        setError(authError.message);
+        const msg = authError.message?.toLowerCase() || '';
+        if (msg.includes('already registered') || msg.includes('already been registered')) {
+          setError('Este email já está cadastrado. Faça login.');
+        } else if (authError.status === 429 || msg.includes('rate limit') || msg.includes('email rate')) {
+          setError('Muitas tentativas de cadastro. Aguarde alguns minutos e tente novamente.');
+        } else {
+          setError(authError.message);
+        }
         setLoading(false);
         return;
       }
 
       if (!authData.user) {
         setError('Erro ao criar usuário. Tente novamente.');
+        setLoading(false);
+        return;
+      }
+
+      // Supabase retorna user com identities[] vazio quando o email já existe
+      // e a confirmação de email está ativada (evita enumeração de emails)
+      if (!authData.user.identities || authData.user.identities.length === 0) {
+        setError('Este email já está cadastrado. Faça login.');
         setLoading(false);
         return;
       }
@@ -70,7 +85,12 @@ function SignUp() {
 
       if (empresaError) {
         console.error('Erro ao criar empresa:', empresaError);
-        setError('Erro ao criar empresa: ' + empresaError.message);
+        if (empresaError.message?.includes('foreign key') ||
+            empresaError.code === '23503') {
+          setError('Este email já está cadastrado. Faça login.');
+        } else {
+          setError('Erro ao configurar empresa. Tente novamente.');
+        }
         setLoading(false);
         return;
       }

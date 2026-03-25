@@ -14,14 +14,17 @@ const cors = require('cors');
 // --- CONFIGURAÇÃO DO SERVIDOR WEB E WEBSOCKET ---
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: "*", methods: ["GET", "POST"] }
-});
-const PORT = 3000;
 
-// [NOVO] Habilita o CORS para todas as requisições HTTP.
-// Esta linha deve vir antes da definição das suas rotas (app.get).
-app.use(cors());
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL, 'http://localhost:5173']
+  : '*';
+
+const io = new Server(server, {
+  cors: { origin: allowedOrigins, methods: ["GET", "POST"] }
+});
+const PORT = process.env.PORT || 3000;
+
+app.use(cors({ origin: allowedOrigins }));
 
 // Middleware para parse de JSON
 app.use(express.json());
