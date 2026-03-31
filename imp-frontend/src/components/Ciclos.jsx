@@ -583,12 +583,16 @@ function Ciclos() {
       <AppBar position="static" elevation={0} sx={{ bgcolor: '#111', borderBottom: '1px solid #1e1e1e' }}>
         <Toolbar sx={{ px: 4, minHeight: '56px !important' }}>
           <IconButton edge="start" size="small" onClick={() => navigate('/')}
-            sx={{ color: '#555', mr: 2, '&:hover': { color: '#aaa' } }}>
+            sx={{ color: '#555', mr: 1.5, '&:hover': { color: '#aaa' } }}>
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
-          <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#e2e2e2', fontFamily: '"Outfit", sans-serif' }}>
-            Ciclos de Produção
-          </Typography>
+          <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 26, width: 'auto', marginRight: 12 }} />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography sx={{ color: '#2a2a2a', fontSize: '0.875rem' }}>/</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#e2e2e2', fontFamily: '"Outfit", sans-serif' }}>
+              Ciclos de Produção
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
 

@@ -540,12 +540,12 @@ export default function DashboardOverview() {
         <Toolbar sx={{ px: 4, minHeight: '56px !important', gap: 1 }}>
           {/* Logo / Nome */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mr: 4 }}>
-            <Box sx={{ width: 28, height: 28, bgcolor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ThermostatOutlined sx={{ fontSize: 16, color: '#555' }} />
-            </Box>
-            <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#e2e2e2', fontFamily: '"Outfit", sans-serif' }}>
-              {empresaNome || 'IMP'}
-            </Typography>
+            <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 28, width: 'auto' }} />
+            {empresaNome && (
+              <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#555', fontFamily: '"Outfit", sans-serif' }}>
+                {empresaNome}
+              </Typography>
+            )}
           </Box>
 
           {/* Nav */}

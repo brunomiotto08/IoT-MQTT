@@ -415,9 +415,10 @@ export default function CicloMonitor() {
       {/* ── AppBar ───────────────────────────────────────────── */}
       <AppBar position="static" elevation={0} sx={{ bgcolor: '#111', borderBottom: '1px solid #1e1e1e' }}>
         <Toolbar sx={{ px: 4, minHeight: '56px !important', gap: 1 }}>
-          <IconButton size="small" onClick={() => navigate('/ciclos')} sx={{ color: '#555', mr: 1, '&:hover': { color: '#aaa' } }}>
+          <IconButton size="small" onClick={() => navigate('/ciclos')} sx={{ color: '#555', mr: 1.5, '&:hover': { color: '#aaa' } }}>
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
+          <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 26, width: 'auto', marginRight: 12 }} />
 
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>

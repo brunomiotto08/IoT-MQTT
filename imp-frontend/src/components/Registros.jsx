@@ -17,24 +17,81 @@ import {
   IconButton,
   Button,
   Chip,
-  Avatar,
   TextField,
   Select,
   MenuItem,
   FormControl,
   InputLabel,
-  CircularProgress
+  InputAdornment,
+  CircularProgress,
+  Divider,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import TableChartIcon from '@mui/icons-material/TableChart';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
-import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Badge colorido para valores numéricos (temperatura, pressão…)
+function ValueBadge({ value, color, fmt }) {
+  if (value == null) return <Typography sx={{ color: '#2a2a2a', fontSize: '0.78rem' }}>—</Typography>;
+  const c = color ?? '#555';
+  return (
+    <Box sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      px: 1,
+      py: 0.25,
+      bgcolor: `${c}18`,
+      border: `1px solid ${c}40`,
+      borderRadius: '6px',
+      minWidth: 64,
+      justifyContent: 'center',
+    }}>
+      <Typography sx={{ color: c, fontWeight: 700, fontSize: '0.8rem', fontFamily: '"Outfit", sans-serif', letterSpacing: '-0.01em', lineHeight: 1.4 }}>
+        {fmt(value)}
+      </Typography>
+    </Box>
+  );
+}
+
+// Badge de status (ligado/desligado/aberta/fechada…)
+const STATUS_BADGE = {
+  ligado:   { color: '#22c55e', label: 'Ligado' },
+  ativo:    { color: '#22c55e', label: 'Ativo' },
+  aberta:   { color: '#22c55e', label: 'Aberta' },
+  desligado:{ color: '#f59e0b', label: 'Desligado' },
+  parado:   { color: '#f59e0b', label: 'Parado' },
+  fechada:  { color: '#6b7280', label: 'Fechada' },
+  erro:     { color: '#ef4444', label: 'Erro' },
+  falha:    { color: '#ef4444', label: 'Falha' },
+};
+
+function StatusBadge({ value }) {
+  if (!value) return <Typography sx={{ color: '#2a2a2a', fontSize: '0.78rem' }}>—</Typography>;
+  const cfg = STATUS_BADGE[value.toLowerCase()] ?? { color: '#555', label: value };
+  return (
+    <Box sx={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 0.5,
+      px: 1,
+      py: 0.25,
+      bgcolor: `${cfg.color}18`,
+      border: `1px solid ${cfg.color}40`,
+      borderRadius: '6px',
+    }}>
+      <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: cfg.color, flexShrink: 0 }} />
+      <Typography sx={{ color: cfg.color, fontWeight: 700, fontSize: '0.72rem', fontFamily: '"Outfit", sans-serif', lineHeight: 1.4, whiteSpace: 'nowrap' }}>
+        {cfg.label}
+      </Typography>
+    </Box>
+  );
+}
 
 function Registros() {
   const navigate = useNavigate();
@@ -94,8 +151,8 @@ function Registros() {
       const params = new URLSearchParams();
       
       if (maquinaSelecionada) params.append('maquina_id', maquinaSelecionada);
-      if (dataInicio) params.append('data_inicio', dataInicio);
-      if (dataFim) params.append('data_fim', dataFim);
+      if (dataInicio) params.append('data_inicio', new Date(dataInicio + 'T00:00:00').toISOString());
+      if (dataFim) params.append('data_fim', new Date(dataFim + 'T23:59:59').toISOString());
       
       if (params.toString()) {
         url += `?${params.toString()}`;
@@ -174,53 +231,49 @@ function Registros() {
     return 'default';
   };
   
-  // Função para carregar thresholds do localStorage
+  // Carrega thresholds do localStorage (mesmo formato do Configuracoes.jsx)
   const loadThresholds = () => {
     try {
-      const savedConfig = localStorage.getItem('imp_thresholds');
-      if (savedConfig) {
-        const config = JSON.parse(savedConfig);
-        
-        // Migração automática: vibracao -> pressao
-        if (config.vibracao && !config.pressao) {
-          config.pressao = config.vibracao;
-          delete config.vibracao;
-          localStorage.setItem('imp_thresholds', JSON.stringify(config));
+      const saved = localStorage.getItem('imp_thresholds');
+      if (saved) {
+        const cfg = JSON.parse(saved);
+        // Migração: vibracao → pressao
+        if (cfg.vibracao && !cfg.pressao) {
+          cfg.pressao = cfg.vibracao;
+          delete cfg.vibracao;
+          localStorage.setItem('imp_thresholds', JSON.stringify(cfg));
         }
-        
-        return config;
+        return cfg;
       }
-    } catch (error) {
-      console.error('Erro ao carregar thresholds:', error);
+    } catch (e) {
+      console.error('Erro ao carregar thresholds:', e);
     }
+    // Valores padrão — mesmos do DEFAULT_CONFIG em Configuracoes.jsx
     return {
-      temperatura: { min: 20, low: 40, medium: 60, high: 80 },
-      pressao: { min: 0, low: 2, medium: 5, high: 8 },
-      pressao_envelope: { min: 0, low: 2, medium: 4, high: 6 },
-      pressao_saco_ar: { min: 0, low: 2, medium: 4, high: 6 }
+      temperatura:     { minimo: 0, 'atenção': 90,  critico: 100, maximo: 150 },
+      pressao:         { minimo: 0, 'atenção': 5,   critico: 8,   maximo: 15  },
+      pressao_envelope:{ minimo: 0, 'atenção': 4,   critico: 6,   maximo: 10  },
+      pressao_saco_ar: { minimo: 0, 'atenção': 4,   critico: 6,   maximo: 10  },
     };
   };
-  
-  // Função para obter cor baseada no valor e thresholds
+
+  // Cores baseadas nos thresholds salvos nas Configurações
+  // azul  = abaixo do mínimo   (muito abaixo do esperado)
+  // verde = entre mínimo e atenção (normal / esperado)
+  // amarelo = entre atenção e crítico (atenção)
+  // vermelho = acima do crítico (crítico)
   const getValueColor = (value, type) => {
-    if (value == null) return '#94a3b8'; // Cinza para valores nulos
-    
+    if (value == null) return null;
+
     const thresholds = loadThresholds();
-    const config = thresholds[type];
-    
-    if (!config) return '#94a3b8';
-    
-    const numValue = parseFloat(value);
-    
-    if (numValue >= config.high) {
-      return '#ef4444'; // Vermelho - Crítico
-    } else if (numValue >= config.medium) {
-      return '#f59e0b'; // Amarelo - Alerta
-    } else if (numValue >= config.low) {
-      return '#10b981'; // Verde - Normal
-    } else {
-      return '#3b82f6'; // Azul - Baixo
-    }
+    const cfg = thresholds[type];
+    if (!cfg) return null;
+
+    const v = parseFloat(value);
+    if (v >= cfg.critico)   return '#ef4444'; // vermelho
+    if (v >= cfg['atenção']) return '#f59e0b'; // amarelo
+    if (v >= cfg.minimo)    return '#10b981'; // verde
+    return '#3b82f6';                          // azul
   };
   
   const applyFilters = () => {
@@ -240,14 +293,12 @@ function Registros() {
       {/* Header */}
       <AppBar position="static" elevation={0}>
         <Toolbar sx={{ px: 4, minHeight: '56px !important', gap: 1 }}>
-          <IconButton edge="start" size="small" onClick={() => navigate('/')} sx={{ color: '#666', mr: 1, '&:hover': { color: '#aaa' } }}>
+          <IconButton edge="start" size="small" onClick={() => navigate('/')} sx={{ color: '#666', mr: 1.5, '&:hover': { color: '#aaa' } }}>
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
+          <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 26, width: 'auto', marginRight: 12 }} />
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#888', fontFamily: '"Outfit", sans-serif' }}>
-                {empresaNome || 'IMP'}
-              </Typography>
               <Typography sx={{ color: '#333' }}>/</Typography>
               <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#e2e2e2' }}>
                 Registros de Leituras
@@ -262,130 +313,151 @@ function Registros() {
       </AppBar>
       
       {/* Filtros */}
-      <Container maxWidth="xl" sx={{ py: 4, px: 6 }}>
-        <Paper 
-          elevation={3} 
-          sx={{ 
-            p: 3, 
-            mb: 3,
-            borderRadius: 3,
-            background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)',
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <FilterListIcon sx={{ mr: 1, color: '#94a3b8' }} />
-            <Typography variant="h6" sx={{ color: '#ffffff', fontWeight: 600 }}>
+      <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, md: 4 } }}>
+        <Paper elevation={0} sx={{
+          p: 2.5,
+          mb: 3,
+          bgcolor: '#161616',
+          border: '1px solid #222',
+          borderRadius: '10px',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <FilterListIcon sx={{ fontSize: 16, color: '#444' }} />
+            <Typography sx={{ fontSize: '0.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#3a3a3a', fontFamily: '"Outfit", sans-serif' }}>
               Filtros
             </Typography>
+            <Box sx={{ flex: 1, height: '1px', bgcolor: '#1e1e1e' }} />
           </Box>
-          
+
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
-            <FormControl sx={{ minWidth: 200 }} size="small">
-              <InputLabel>Máquina</InputLabel>
+            {/* Máquina */}
+            <FormControl size="small" sx={{ minWidth: 220 }}>
+              <InputLabel sx={{ fontSize: '0.8rem' }}>Máquina</InputLabel>
               <Select
                 value={maquinaSelecionada}
                 label="Máquina"
                 onChange={(e) => setMaquinaSelecionada(e.target.value)}
-                sx={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                sx={{ fontSize: '0.875rem' }}
               >
-                <MenuItem value="">
-                  <em>Todas</em>
-                </MenuItem>
-                {maquinas.map((maquina) => (
-                  <MenuItem key={maquina.id} value={maquina.id}>
-                    {maquina.nome} - {maquina.modelo}
-                  </MenuItem>
+                <MenuItem value=""><em>Todas</em></MenuItem>
+                {maquinas.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>{m.nome}{m.modelo ? ` — ${m.modelo}` : ''}</MenuItem>
                 ))}
               </Select>
             </FormControl>
-            
+
+            {/* Data Início */}
             <TextField
               label="Data Início"
-              type="datetime-local"
+              type="date"
               value={dataInicio}
               onChange={(e) => setDataInicio(e.target.value)}
               size="small"
-              sx={{ minWidth: 200, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
               InputLabelProps={{ shrink: true }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <CalendarTodayIcon sx={{ fontSize: 14, color: '#444' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ minWidth: 180 }}
             />
-            
+
+            {/* Data Fim */}
             <TextField
               label="Data Fim"
-              type="datetime-local"
+              type="date"
               value={dataFim}
               onChange={(e) => setDataFim(e.target.value)}
               size="small"
-              sx={{ minWidth: 200, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
               InputLabelProps={{ shrink: true }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <CalendarTodayIcon sx={{ fontSize: 14, color: '#444' }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ minWidth: 180 }}
             />
-            
-            <Button 
-              variant="contained" 
-              startIcon={<FilterListIcon />}
-              onClick={applyFilters}
-              sx={{ fontWeight: 600 }}
-            >
-              Aplicar Filtros
-            </Button>
-            
-            <Button 
-              variant="outlined"
-              onClick={clearFilters}
-              sx={{ fontWeight: 600 }}
-            >
-              Limpar
-            </Button>
-            
-            <Button 
-              variant="outlined" 
-              startIcon={<RefreshIcon />}
-              onClick={() => fetchLeituras()}
-              sx={{ fontWeight: 600 }}
-            >
-              Atualizar
-            </Button>
+
+            <Box sx={{ display: 'flex', gap: 1, ml: 'auto' }}>
+              {(maquinaSelecionada || dataInicio || dataFim) && (
+                <Button size="small" onClick={clearFilters}
+                  sx={{ color: '#555', border: '1px solid #222', fontSize: '0.78rem', px: 1.5, '&:hover': { color: '#aaa', borderColor: '#3a3a3a' } }}>
+                  Limpar
+                </Button>
+              )}
+              <Button size="small" startIcon={<RefreshIcon sx={{ fontSize: 14 }} />} onClick={() => fetchLeituras()}
+                sx={{ color: '#555', border: '1px solid #222', fontSize: '0.78rem', px: 1.5, '&:hover': { color: '#aaa', borderColor: '#3a3a3a' } }}>
+                Atualizar
+              </Button>
+              <Button size="small" startIcon={<FilterListIcon sx={{ fontSize: 14 }} />} onClick={applyFilters}
+                sx={{ color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', fontSize: '0.78rem', fontWeight: 700, px: 1.5, '&:hover': { borderColor: '#3b82f6', bgcolor: 'rgba(59,130,246,0.05)' } }}>
+                Buscar
+              </Button>
+            </Box>
           </Box>
         </Paper>
         
+        {/* Legenda de cores */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+          {[
+            { color: '#3b82f6', label: 'Abaixo do esperado' },
+            { color: '#10b981', label: 'Normal' },
+            { color: '#f59e0b', label: 'Atenção' },
+            { color: '#ef4444', label: 'Crítico' },
+          ].map(({ color, label }) => (
+            <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color }} />
+              <Typography sx={{ fontSize: '0.68rem', color: '#444', fontWeight: 600 }}>{label}</Typography>
+            </Box>
+          ))}
+        </Box>
+
         {/* Tabela */}
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 10 }}>
-            <CircularProgress size={60} />
+            <CircularProgress size={40} sx={{ color: '#333' }} />
           </Box>
         ) : (
-          <Paper 
-            elevation={3}
-            sx={{ 
-              borderRadius: 3,
-              overflow: 'hidden',
-              background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)',
-            }}
-          >
-            <TableContainer sx={{ maxHeight: 600 }}>
-              <Table stickyHeader>
+          <Paper elevation={0} sx={{
+            borderRadius: '10px',
+            overflow: 'hidden',
+            bgcolor: '#161616',
+            border: '1px solid #1e1e1e',
+          }}>
+            <TableContainer sx={{ maxHeight: 'calc(100vh - 280px)' }}>
+              <Table stickyHeader size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Data/Hora</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Temperatura (°C)</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Pressão (Pa)</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>P. Envelope (bar)</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>P. Saco Ar (bar)</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Status</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Motor Vent.</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>V. Ent. Auto.</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>V. Desc. Auto.</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>V. Ent. Saco</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>V. Desc. Saco</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>V. Ent. Env.</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>V. Desc. Env.</TableCell>
-                    <TableCell sx={{ fontWeight: 800, fontSize: '0.9rem', backgroundColor: 'rgba(20, 20, 20, 0.98)' }}>Peças Prod.</TableCell>
+                    {[
+                      'Data/Hora', 'Temperatura', 'Pressão', 'P. Envelope',
+                      'P. Saco Ar', 'Status', 'Motor Vent.', 'V. Ent. Auto.',
+                      'V. Desc. Auto.', 'V. Ent. Saco', 'V. Desc. Saco',
+                      'V. Ent. Env.', 'V. Desc. Env.', 'Peças',
+                    ].map((h) => (
+                      <TableCell key={h} sx={{
+                        fontWeight: 700,
+                        fontSize: '0.65rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: '#383838',
+                        bgcolor: '#111',
+                        borderBottom: '1px solid #1a1a1a',
+                        whiteSpace: 'nowrap',
+                        py: 1.25,
+                        fontFamily: '"Outfit", sans-serif',
+                      }}>{h}</TableCell>
+                    ))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {leituras.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={14} align="center" sx={{ py: 5 }}>
-                        <Typography variant="body1" sx={{ color: '#94a3b8' }}>
+                      <TableCell colSpan={14} align="center" sx={{ py: 8, borderBottom: 'none' }}>
+                        <Typography sx={{ color: '#333', fontSize: '0.875rem' }}>
                           Nenhum registro encontrado
                         </Typography>
                       </TableCell>
@@ -394,121 +466,49 @@ function Registros() {
                     leituras
                       .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                       .map((leitura, index) => (
-                        <TableRow 
+                        <TableRow
                           key={leitura.id || index}
-                          hover
-                          sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.05)' } }}
+                          sx={{
+                            '&:hover td': { bgcolor: '#1a1a1a' },
+                            '& td': { borderBottom: '1px solid #111', transition: 'background 0.15s' },
+                          }}
                         >
-                          <TableCell sx={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          <TableCell sx={{ fontSize: '0.78rem', whiteSpace: 'nowrap', color: '#888', fontFamily: 'monospace' }}>
                             {formatDateTime(leitura.created_at)}
                           </TableCell>
-                          <TableCell sx={{ fontSize: '0.85rem' }}>
-                            <Box
-                              component="span"
-                              sx={{
-                                fontWeight: 700,
-                                color: getValueColor(leitura.temperatura, 'temperatura'),
-                                transition: 'all 0.3s ease',
-                              }}
-                            >
-                              {leitura.temperatura != null ? parseFloat(leitura.temperatura).toFixed(1) : '-'}
-                            </Box>
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.85rem' }}>
-                            <Box
-                              component="span"
-                              sx={{
-                                fontWeight: 700,
-                                color: getValueColor(leitura.vibracao, 'pressao'),
-                                transition: 'all 0.3s ease',
-                              }}
-                            >
-                              {leitura.vibracao != null ? parseFloat(leitura.vibracao).toFixed(2) : '-'}
-                            </Box>
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.85rem' }}>
-                            <Box
-                              component="span"
-                              sx={{
-                                fontWeight: 700,
-                                color: getValueColor(leitura.pressao_envelope, 'pressao_envelope'),
-                                transition: 'all 0.3s ease',
-                              }}
-                            >
-                              {leitura.pressao_envelope != null ? parseFloat(leitura.pressao_envelope).toFixed(2) : '-'}
-                            </Box>
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.85rem' }}>
-                            <Box
-                              component="span"
-                              sx={{
-                                fontWeight: 700,
-                                color: getValueColor(leitura.pressao_saco_ar, 'pressao_saco_ar'),
-                                transition: 'all 0.3s ease',
-                              }}
-                            >
-                              {leitura.pressao_saco_ar != null ? parseFloat(leitura.pressao_saco_ar).toFixed(2) : '-'}
-                            </Box>
-                          </TableCell>
+
+                          {/* Temperatura */}
                           <TableCell>
-                            <Chip 
-                              label={leitura.status || '-'} 
-                              color={getStatusColor(leitura.status)}
-                              size="small"
-                              sx={{ fontWeight: 600 }}
-                            />
+                            <ValueBadge value={leitura.temperatura} color={getValueColor(leitura.temperatura, 'temperatura')} fmt={(v) => `${parseFloat(v).toFixed(1)}°C`} />
                           </TableCell>
+
+                          {/* Pressão */}
                           <TableCell>
-                            <Chip 
-                              label={leitura.status_motor_ventilador || '-'} 
-                              color={getStatusColor(leitura.status_motor_ventilador)}
-                              size="small"
-                            />
+                            <ValueBadge value={leitura.vibracao} color={getValueColor(leitura.vibracao, 'pressao')} fmt={(v) => `${parseFloat(v).toFixed(2)} Pa`} />
                           </TableCell>
+
+                          {/* P. Envelope */}
                           <TableCell>
-                            <Chip 
-                              label={leitura.status_valvula_entrada_autoclave || '-'} 
-                              color={getStatusColor(leitura.status_valvula_entrada_autoclave)}
-                              size="small"
-                            />
+                            <ValueBadge value={leitura.pressao_envelope} color={getValueColor(leitura.pressao_envelope, 'pressao_envelope')} fmt={(v) => `${parseFloat(v).toFixed(2)} bar`} />
                           </TableCell>
+
+                          {/* P. Saco Ar */}
                           <TableCell>
-                            <Chip 
-                              label={leitura.status_valvula_descarga_autoclave || '-'} 
-                              color={getStatusColor(leitura.status_valvula_descarga_autoclave)}
-                              size="small"
-                            />
+                            <ValueBadge value={leitura.pressao_saco_ar} color={getValueColor(leitura.pressao_saco_ar, 'pressao_saco_ar')} fmt={(v) => `${parseFloat(v).toFixed(2)} bar`} />
                           </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={leitura.status_valvula_entrada_saco_ar || '-'} 
-                              color={getStatusColor(leitura.status_valvula_entrada_saco_ar)}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={leitura.status_valvula_descarga_saco_ar || '-'} 
-                              color={getStatusColor(leitura.status_valvula_descarga_saco_ar)}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={leitura.status_valvula_entrada_envelope || '-'} 
-                              color={getStatusColor(leitura.status_valvula_entrada_envelope)}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={leitura.status_valvula_descarga_envelope || '-'} 
-                              color={getStatusColor(leitura.status_valvula_descarga_envelope)}
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.85rem' }}>
-                            {leitura.pecas_produzidas || '-'}
+
+                          {/* Status e válvulas */}
+                          <TableCell><StatusBadge value={leitura.status} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_motor_ventilador} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_valvula_entrada_autoclave} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_valvula_descarga_autoclave} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_valvula_entrada_saco_ar} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_valvula_descarga_saco_ar} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_valvula_entrada_envelope} /></TableCell>
+                          <TableCell><StatusBadge value={leitura.status_valvula_descarga_envelope} /></TableCell>
+
+                          <TableCell sx={{ fontSize: '0.825rem', color: '#aaa', fontFamily: '"Outfit", sans-serif', fontWeight: 600 }}>
+                            {leitura.pecas_produzidas ?? '—'}
                           </TableCell>
                         </TableRow>
                       ))
@@ -516,7 +516,8 @@ function Registros() {
                 </TableBody>
               </Table>
             </TableContainer>
-            
+
+            <Divider sx={{ borderColor: '#1a1a1a' }} />
             <TablePagination
               rowsPerPageOptions={[10, 25, 50, 100]}
               component="div"
@@ -526,16 +527,13 @@ function Registros() {
               onPageChange={handleChangePage}
               onRowsPerPageChange={handleChangeRowsPerPage}
               labelRowsPerPage="Linhas por página:"
-              labelDisplayedRows={({ from, to, count }) => `${from}-${to} de ${count}`}
+              labelDisplayedRows={({ from, to, count }) => `${from}–${to} de ${count}`}
               sx={{
-                borderTop: '1px solid rgba(80, 80, 80, 0.3)',
-                color: '#ffffff',
-                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
-                  color: '#94a3b8',
-                },
-                '& .MuiTablePagination-select, & .MuiTablePagination-selectIcon': {
-                  color: '#ffffff',
-                }
+                color: '#555',
+                fontSize: '0.75rem',
+                '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': { color: '#555', fontSize: '0.75rem' },
+                '& .MuiTablePagination-select, & .MuiTablePagination-selectIcon': { color: '#777' },
+                '& .MuiIconButton-root': { color: '#555', '&:hover': { color: '#aaa' }, '&.Mui-disabled': { color: '#2a2a2a' } },
               }}
             />
           </Paper>

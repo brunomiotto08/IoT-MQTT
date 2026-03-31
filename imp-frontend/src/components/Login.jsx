@@ -19,7 +19,6 @@ import {
   Lock as LockIcon,
   Visibility,
   VisibilityOff,
-  Login as LoginIcon
 } from '@mui/icons-material';
 
 function Login() {
@@ -100,15 +99,7 @@ function Login() {
         <Paper elevation={0} sx={{ p: { xs: 3, sm: 4 }, bgcolor: '#161616', border: '1px solid #2a2a2a', borderRadius: '10px' }}>
           {/* Logo */}
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, bgcolor: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 2, mb: 2 }}>
-              <LoginIcon sx={{ fontSize: 22, color: '#555' }} />
-            </Box>
-            <Typography variant="h6" sx={{ fontWeight: 700, color: '#e2e2e2', fontFamily: '"Outfit", sans-serif', letterSpacing: '-0.01em' }}>
-              I.M.P.
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#555' }}>
-              Monitoramento Industrial
-            </Typography>
+            <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 72, width: 'auto', display: 'inline-block' }} />
           </Box>
 
           <Box component="form" onSubmit={handleLogin} noValidate>
