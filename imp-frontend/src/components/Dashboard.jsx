@@ -42,19 +42,20 @@ import soundManager from '../utils/soundManager';
 
 function SectionLabel({ label }) {
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.25 }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
       <Typography sx={{
         fontSize: '0.65rem',
         fontWeight: 800,
         textTransform: 'uppercase',
-        letterSpacing: '0.12em',
-        color: '#3d3d3d',
+        letterSpacing: '0.14em',
+        color: '#3a3a3a',
         fontFamily: '"Outfit", sans-serif',
         userSelect: 'none',
+        whiteSpace: 'nowrap',
       }}>
         {label}
       </Typography>
-      <Box sx={{ flex: 1, height: '1px', bgcolor: '#1e1e1e' }} />
+      <Box sx={{ flex: 1, height: '1px', bgcolor: '#1c1c1c' }} />
     </Box>
   );
 }
@@ -579,11 +580,11 @@ function Dashboard() {
       )}
 
       {/* Main Content */}
-      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, md: 4 } }}>
+      <Container maxWidth="xl" sx={{ py: 3.5, px: { xs: 2, md: 4 } }}>
 
         {/* ── Seção 1: KPIs ─────────────────────────────────── */}
         <SectionLabel label="Leitura em Tempo Real" />
-        <Grid container spacing={1.5} sx={{ mb: 3 }}>
+        <Grid container spacing={2} sx={{ mb: 3.5 }}>
           <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
             <DataCard
               title="Temperatura"
@@ -622,7 +623,7 @@ function Dashboard() {
 
         {/* ── Seção 2: Gauge + Temperatura ──────────────────── */}
         <SectionLabel label="Temperatura" />
-        <Grid container spacing={1.5} sx={{ mb: 3 }} alignItems="stretch">
+        <Grid container spacing={2} sx={{ mb: 3.5 }} alignItems="stretch">
           <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex' }}>
             <GaugeChart series={gaugeSeries} />
           </Grid>
@@ -633,7 +634,7 @@ function Dashboard() {
 
         {/* ── Seção 3: Pressão + Produção (igual) ───────────── */}
         <SectionLabel label="Pressão e Produção" />
-        <Grid container spacing={1.5} sx={{ mb: 3 }} alignItems="stretch">
+        <Grid container spacing={2} sx={{ mb: 3.5 }} alignItems="stretch">
           <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
             <LineChart series={vibrationSeries} title="Pressão" unit="Pa" color="#6366f1" />
           </Grid>
@@ -644,7 +645,7 @@ function Dashboard() {
 
         {/* ── Seção 4: Pressões envelope e saco de ar ───────── */}
         <SectionLabel label="Pressões — Envelope e Saco de Ar" />
-        <Grid container spacing={1.5} sx={{ mb: 2 }}>
+        <Grid container spacing={2} sx={{ mb: 3 }}>
           <Grid item xs={12} sx={{ display: 'flex' }}>
             <LineChart series={pressureSeries} title="Pressões — Envelope e Saco de Ar" unit="bar" />
           </Grid>

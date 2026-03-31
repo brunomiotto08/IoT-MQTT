@@ -90,31 +90,31 @@ function DataCard({ title, value, unit, icon, isStatus = false, threshold = fals
       bgcolor: '#161616',
       border: '1px solid',
       borderColor: hasAlert ? c.border : '#222',
-      borderRadius: '8px',
+      borderRadius: '10px',
       position: 'relative',
       overflow: 'hidden',
       display: 'flex',
       flexDirection: 'column',
       transition: 'border-color 0.3s ease',
     }}>
-      {/* Barra indicadora de status no topo */}
+      {/* Status bar top */}
       <Box sx={{
-        height: '2px',
-        bgcolor: level === 'neutral' ? '#222' : c.hex,
+        height: '3px',
+        bgcolor: level === 'neutral' ? '#1e1e1e' : c.hex,
         transition: 'background-color 0.4s ease',
         flexShrink: 0,
       }} />
 
-      <Box sx={{ p: 2, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      <Box sx={{ px: 3, py: 2.5, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
 
-        {/* Linha superior: título + ícone */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
+        {/* Top row: title + icon */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
           <Typography sx={{
             fontSize: '0.7rem',
             fontWeight: 700,
             textTransform: 'uppercase',
-            letterSpacing: '0.1em',
-            color: '#555',
+            letterSpacing: '0.12em',
+            color: '#4a4a4a',
             lineHeight: 1.3,
             fontFamily: '"Outfit", sans-serif',
           }}>
@@ -122,29 +122,29 @@ function DataCard({ title, value, unit, icon, isStatus = false, threshold = fals
           </Typography>
           {icon && (
             <Box sx={{
-              color: level === 'neutral' ? '#333' : c.hex,
+              color: level === 'neutral' ? '#2e2e2e' : c.hex,
               display: 'flex',
               transition: 'color 0.3s ease',
-              '& .MuiSvgIcon-root': { fontSize: 16 },
+              '& .MuiSvgIcon-root': { fontSize: 17 },
             }}>
               {icon}
             </Box>
           )}
         </Box>
 
-        {/* Valor principal */}
+        {/* Main value */}
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           {value !== null && value !== undefined ? (
             isStatus ? (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                 <Box sx={{
-                  width: 7, height: 7, borderRadius: '50%',
+                  width: 8, height: 8, borderRadius: '50%',
                   bgcolor: chipCfg?.color ?? '#666', flexShrink: 0,
-                  boxShadow: chipCfg ? `0 0 6px ${chipCfg.color}60` : 'none',
+                  boxShadow: chipCfg ? `0 0 8px ${chipCfg.color}70` : 'none',
                   transition: 'background 0.3s, box-shadow 0.3s',
                 }} />
                 <Typography sx={{
-                  fontSize: '1.25rem',
+                  fontSize: '1.5rem',
                   fontWeight: 700,
                   color: chipCfg?.color ?? '#888',
                   fontFamily: '"Outfit", sans-serif',
@@ -155,26 +155,26 @@ function DataCard({ title, value, unit, icon, isStatus = false, threshold = fals
                 </Typography>
               </Box>
             ) : (
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                 <Typography sx={{
-                  fontSize: '1.875rem',
+                  fontSize: '2.375rem',
                   fontWeight: 700,
                   color: valueColor,
                   fontFamily: '"Outfit", sans-serif',
                   lineHeight: 1,
-                  opacity: flash ? 0.35 : 1,
+                  opacity: flash ? 0.3 : 1,
                   transition: 'color 0.3s ease, opacity 0.2s ease',
-                  letterSpacing: '-0.02em',
+                  letterSpacing: '-0.03em',
                 }}>
                   {value}
                 </Typography>
                 {unit && (
                   <Typography sx={{
-                    fontSize: '0.8rem',
+                    fontSize: '0.85rem',
                     fontWeight: 600,
-                    color: '#444',
+                    color: '#3a3a3a',
                     lineHeight: 1,
-                    mb: '2px',
+                    mb: '3px',
                   }}>
                     {unit}
                   </Typography>
@@ -182,19 +182,19 @@ function DataCard({ title, value, unit, icon, isStatus = false, threshold = fals
               </Box>
             )
           ) : (
-            <LinearProgress sx={{ height: 2, borderRadius: 1, my: 1 }} />
+            <LinearProgress sx={{ height: 2, borderRadius: 1, my: 1.5 }} />
           )}
         </Box>
 
-        {/* Rodapé: badge de nível */}
-        <Box sx={{ mt: 1.5, minHeight: 18 }}>
+        {/* Footer badge */}
+        <Box sx={{ mt: 2, minHeight: 20 }}>
           {threshold && value !== null && value !== undefined && !isStatus && (
             <Box sx={{
               display: 'inline-flex', alignItems: 'center', gap: 0.5,
-              px: 0.875, py: 0.25,
+              px: 1, py: 0.375,
               bgcolor: c.bg,
               border: `1px solid ${c.border}`,
-              borderRadius: '4px',
+              borderRadius: '5px',
             }}>
               <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: c.hex, flexShrink: 0 }} />
               <Typography sx={{
@@ -202,7 +202,7 @@ function DataCard({ title, value, unit, icon, isStatus = false, threshold = fals
                 fontWeight: 700,
                 color: c.hex,
                 lineHeight: 1,
-                letterSpacing: '0.04em',
+                letterSpacing: '0.06em',
               }}>
                 {c.label}
               </Typography>

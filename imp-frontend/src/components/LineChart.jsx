@@ -5,7 +5,6 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 
-// Paleta discreta — cores só para diferenciar séries múltiplas
 const MULTI_COLORS = ['#3b82f6', '#6366f1', '#22c55e', '#f59e0b'];
 
 function buildOptions({ colors, unit, isMulti, showLegend }) {
@@ -19,19 +18,15 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
         speed: 500,
         dynamicAnimation: { enabled: true, speed: 400 },
       },
-      toolbar: {
-        show: true,
-        tools: { download: false, selection: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true },
-        offsetY: -4,
-      },
-      zoom: { enabled: true },
+      toolbar: { show: false },
+      zoom: { enabled: false },
       dropShadow: { enabled: false },
     },
     colors,
     dataLabels: { enabled: false },
     stroke: {
       curve: 'smooth',
-      width: isMulti ? 2 : 2,
+      width: 2,
       lineCap: 'round',
     },
     fill: {
@@ -39,31 +34,32 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
       gradient: {
         shade: 'dark',
         type: 'vertical',
-        opacityFrom: isMulti ? 0.12 : 0.15,
+        opacityFrom: isMulti ? 0.1 : 0.13,
         opacityTo: 0,
         stops: [0, 100],
       },
     },
     grid: {
-      borderColor: '#202020',
-      strokeDashArray: 4,
+      borderColor: '#1c1c1c',
+      strokeDashArray: 5,
       xaxis: { lines: { show: false } },
       yaxis: { lines: { show: true } },
-      padding: { top: 4, right: 8, bottom: 0, left: 0 },
+      padding: { top: 8, right: 4, bottom: 4, left: 4 },
     },
     xaxis: {
       type: 'datetime',
       labels: {
         datetimeUTC: false,
         format: 'HH:mm',
-        style: { colors: '#444', fontSize: '11px', fontWeight: 500 },
+        style: { colors: '#3a3a3a', fontSize: '11px', fontWeight: 500 },
+        offsetY: 2,
       },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
     yaxis: {
       labels: {
-        style: { colors: '#444', fontSize: '11px', fontWeight: 500 },
+        style: { colors: '#3a3a3a', fontSize: '11px', fontWeight: 500 },
         formatter: (v) => {
           if (v === undefined || v === null) return '';
           if (unit === 'unidades') return v.toFixed(0);
@@ -98,7 +94,7 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
       horizontalAlign: 'right',
       fontSize: '12px',
       fontWeight: 600,
-      labels: { colors: '#666' },
+      labels: { colors: '#555' },
       markers: { width: 8, height: 8, radius: 4 },
       itemMargin: { horizontal: 10 },
     } : { show: false },
@@ -148,19 +144,19 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
       transition: 'border-color 0.2s',
       '&:hover': { borderColor: '#2a2a2a' },
     }}>
-      <CardContent sx={{ p: 3, pb: '12px !important', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ p: 3, pb: '16px !important', flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
           <Box>
             <Typography variant="overline" sx={{ color: '#555', fontWeight: 600, letterSpacing: '0.08em', fontSize: '0.7rem' }}>
               {title}
             </Typography>
             {!isMulti && latestValue !== undefined && (
-              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, mt: 0.25 }}>
-                <Typography sx={{ fontSize: '1.5rem', fontWeight: 700, color, fontFamily: '"Outfit", sans-serif', lineHeight: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75, mt: 0.5 }}>
+                <Typography sx={{ fontSize: '1.625rem', fontWeight: 700, color, fontFamily: '"Outfit", sans-serif', lineHeight: 1 }}>
                   {unit === 'unidades' ? latestValue?.toFixed(0) : latestValue?.toFixed(2)}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#555', fontWeight: 500 }}>{unit}</Typography>
+                <Typography variant="caption" sx={{ color: '#444', fontWeight: 500 }}>{unit}</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ml: 0.5 }}>
                   <TrendIcon trend={trend} color={trendColor} />
                 </Box>
@@ -168,15 +164,15 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
             )}
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-            <Typography variant="caption" sx={{ color: '#333', fontSize: '0.65rem' }}>
-              {dataPoints} pontos
+            <Typography variant="caption" sx={{ color: '#2a2a2a', fontSize: '0.65rem' }}>
+              {dataPoints} pts
             </Typography>
           </Box>
         </Box>
 
-        {/* Chart */}
-        <Box sx={{ flex: 1, mx: -0.5 }}>
-          <Chart options={options} series={series} type="area" height={220} />
+        {/* Chart — fills remaining flex space */}
+        <Box sx={{ flex: 1, mx: -0.5, minHeight: 0 }}>
+          <Chart options={options} series={series} type="area" height={300} />
         </Box>
       </CardContent>
     </Card>

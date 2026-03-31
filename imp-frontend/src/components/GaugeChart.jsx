@@ -35,10 +35,10 @@ function GaugeChart({ series }) {
     },
     plotOptions: {
       radialBar: {
-        startAngle: -120,
-        endAngle: 120,
+        startAngle: -125,
+        endAngle: 125,
         hollow: {
-          size: '68%',
+          size: '64%',
           background: 'transparent',
           margin: 0,
         },
@@ -51,11 +51,11 @@ function GaugeChart({ series }) {
           name: { show: false },
           value: {
             show: true,
-            fontSize: '2rem',
+            fontSize: '2.25rem',
             fontWeight: 700,
             fontFamily: '"Outfit", sans-serif',
             color: cfg.color,
-            offsetY: 6,
+            offsetY: 8,
             formatter: () => `${displayTemp.toFixed(1)}°`,
           },
         },
@@ -82,7 +82,7 @@ function GaugeChart({ series }) {
     }}>
       <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
           <Typography variant="overline" sx={{ color: '#555', fontWeight: 600, letterSpacing: '0.08em', fontSize: '0.7rem' }}>
             Temperatura Atual
           </Typography>
@@ -94,27 +94,32 @@ function GaugeChart({ series }) {
           </Box>
         </Box>
 
-        {/* Gauge */}
-        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', mt: -1 }}>
-          <Box sx={{ width: '100%', maxWidth: 280 }}>
-            <Chart options={options} series={[Math.min((temperature / 120) * 100, 100)]} type="radialBar" height={240} />
+        {/* Gauge — fills remaining space */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ width: '100%' }}>
+            <Chart
+              options={options}
+              series={[Math.min((temperature / 120) * 100, 100)]}
+              type="radialBar"
+              height={290}
+            />
           </Box>
         </Box>
 
         {/* Footer */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid #1e1e1e' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1.5, borderTop: '1px solid #1a1a1a' }}>
           <Box sx={{ textAlign: 'center', flex: 1 }}>
-            <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block', mb: 0.25 }}>Mín. seguro</Typography>
+            <Typography variant="caption" sx={{ color: '#383838', fontSize: '0.63rem', display: 'block', mb: 0.25 }}>Mín. seguro</Typography>
             <Typography variant="caption" sx={{ color: '#555', fontWeight: 700, fontSize: '0.75rem' }}>10°C</Typography>
           </Box>
-          <Box sx={{ width: '1px', bgcolor: '#1e1e1e' }} />
+          <Box sx={{ width: '1px', bgcolor: '#1a1a1a' }} />
           <Box sx={{ textAlign: 'center', flex: 1 }}>
-            <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block', mb: 0.25 }}>Atenção</Typography>
+            <Typography variant="caption" sx={{ color: '#383838', fontSize: '0.63rem', display: 'block', mb: 0.25 }}>Atenção</Typography>
             <Typography variant="caption" sx={{ color: '#f59e0b', fontWeight: 700, fontSize: '0.75rem' }}>90°C</Typography>
           </Box>
-          <Box sx={{ width: '1px', bgcolor: '#1e1e1e' }} />
+          <Box sx={{ width: '1px', bgcolor: '#1a1a1a' }} />
           <Box sx={{ textAlign: 'center', flex: 1 }}>
-            <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block', mb: 0.25 }}>Crítico</Typography>
+            <Typography variant="caption" sx={{ color: '#383838', fontSize: '0.63rem', display: 'block', mb: 0.25 }}>Crítico</Typography>
             <Typography variant="caption" sx={{ color: '#ef4444', fontWeight: 700, fontSize: '0.75rem' }}>100°C</Typography>
           </Box>
         </Box>

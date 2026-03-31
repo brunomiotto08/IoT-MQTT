@@ -220,21 +220,21 @@ function StatusMaquina() {
     
     return (
       <Card 
-        elevation={3}
+        elevation={0}
         sx={{
-          borderRadius: 3,
-          background: `linear-gradient(135deg, ${statusInfo.bgColor} 0%, rgba(40, 40, 40, 0.95) 100%)`,
-          border: `3px solid ${statusInfo.color}`,
-          transition: 'all 0.3s ease',
+          borderRadius: '10px',
+          background: '#161616',
+          border: `1.5px solid ${statusInfo.color}55`,
+          transition: 'all 0.25s ease',
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
           overflow: 'hidden',
           '&:hover': {
-            transform: 'translateY(-8px)',
-            boxShadow: `0 16px 48px ${statusInfo.color}60`,
-            borderColor: statusInfo.color,
+            transform: 'translateY(-4px)',
+            boxShadow: `0 12px 36px ${statusInfo.color}30`,
+            borderColor: `${statusInfo.color}99`,
           },
           '&::before': {
             content: '""',
@@ -242,7 +242,7 @@ function StatusMaquina() {
             top: 0,
             left: 0,
             right: 0,
-            height: '4px',
+            height: '3px',
             background: statusInfo.color,
           }
         }}
@@ -253,12 +253,13 @@ function StatusMaquina() {
             <Typography 
               variant="caption" 
               sx={{ 
-                color: '#94a3b8',
-                fontSize: '0.7rem',
+                color: '#4a4a4a',
+                fontSize: '0.65rem',
                 fontWeight: 700,
                 textTransform: 'uppercase',
-                letterSpacing: 1.5,
-                mb: 1
+                letterSpacing: '0.14em',
+                mb: 1.5,
+                display: 'block',
               }}
             >
               {category}
@@ -266,52 +267,53 @@ function StatusMaquina() {
           )}
           
           {/* Título e Ícone */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2.5 }}>
             <Avatar 
               sx={{ 
-                bgcolor: `${statusInfo.color}30`,
-                border: `2px solid ${statusInfo.color}`,
+                bgcolor: `${statusInfo.color}18`,
+                border: `1.5px solid ${statusInfo.color}55`,
                 color: statusInfo.color,
-                width: 56,
-                height: 56,
+                width: 48,
+                height: 48,
               }}
             >
               {icon}
             </Avatar>
             <Typography 
-              variant="h6" 
               sx={{ 
-                fontWeight: 800,
-                color: '#ffffff',
-                fontSize: '1.1rem',
+                fontWeight: 700,
+                color: '#d0d0d0',
+                fontSize: '1rem',
                 lineHeight: 1.3,
-                flex: 1
+                flex: 1,
+                fontFamily: '"Outfit", sans-serif',
               }}
             >
               {title}
             </Typography>
           </Box>
           
-          {/* Valor (se houver) - centralizado */}
+          {/* Valor (se houver) */}
           {value !== null && (
-            <Box sx={{ textAlign: 'center', mb: 2, py: 1 }}>
+            <Box sx={{ textAlign: 'center', mb: 2.5, py: 0.5 }}>
               <Typography 
-                variant="h3" 
                 sx={{ 
                   color: statusInfo.color,
-                  fontWeight: 900,
-                  fontSize: '2.5rem',
-                  textShadow: `0 0 20px ${statusInfo.color}40`,
+                  fontWeight: 700,
+                  fontSize: '2.625rem',
+                  lineHeight: 1,
+                  fontFamily: '"Outfit", sans-serif',
+                  letterSpacing: '-0.02em',
                 }}
               >
                 {value}
               </Typography>
               <Typography 
-                variant="h6" 
                 sx={{ 
-                  color: '#94a3b8',
+                  color: '#444',
                   fontWeight: 600,
-                  mt: 0.5
+                  fontSize: '0.875rem',
+                  mt: 0.75,
                 }}
               >
                 {unit}
@@ -319,35 +321,34 @@ function StatusMaquina() {
             </Box>
           )}
           
-          {/* Status Badge - ocupa toda a largura */}
+          {/* Status Badge */}
           <Box 
             sx={{ 
               mt: 'auto',
               pt: 2,
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '1px solid #1e1e1e',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', fontSize: 28, color: statusInfo.color }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', color: statusInfo.color, '& svg': { fontSize: 22 } }}>
                 {statusInfo.icon}
               </Box>
-              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600 }}>
-                STATUS ATUAL
+              <Typography sx={{ color: '#3a3a3a', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                Status Atual
               </Typography>
             </Box>
             <Chip 
               label={statusInfo.label}
               sx={{
-                bgcolor: statusInfo.color,
-                color: '#ffffff',
-                fontWeight: 800,
-                fontSize: '0.9rem',
+                bgcolor: `${statusInfo.color}20`,
+                color: statusInfo.color,
+                border: `1px solid ${statusInfo.color}55`,
+                fontWeight: 700,
+                fontSize: '0.85rem',
                 width: '100%',
-                height: 40,
-                borderRadius: 2,
-                '& .MuiChip-label': {
-                  padding: 0,
-                }
+                height: 36,
+                borderRadius: '6px',
+                '& .MuiChip-label': { padding: 0 },
               }}
             />
           </Box>
@@ -386,7 +387,7 @@ function StatusMaquina() {
       </AppBar>
       
       {/* Filtro de Máquina */}
-      <Container maxWidth="xl" sx={{ pt: 4, px: 6 }}>
+      <Container maxWidth="xl" sx={{ pt: 3.5, px: { xs: 2, md: 4 } }}>
         <Box sx={{ mb: 3 }}>
           <FormControl sx={{ minWidth: 280 }} size="small">
             <InputLabel>Selecionar Máquina</InputLabel>
@@ -416,7 +417,7 @@ function StatusMaquina() {
       </Container>
       
       {/* Status Cards */}
-      <Container maxWidth="xl" sx={{ py: 3, px: 6 }}>
+      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, md: 4 } }}>
         {isLoading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 10 }}>
             <CircularProgress size={60} />
@@ -429,15 +430,15 @@ function StatusMaquina() {
           </Box>
         ) : (
           <Box>
-            {/* Seção 1: Status Geral - Paper agrupado */}
-            <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, pb: 2, borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
-                <PowerSettingsNewIcon sx={{ fontSize: 32, color: '#3b82f6' }} />
-                <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 800 }}>
+            {/* Seção 1: Status Geral */}
+            <Paper elevation={0} sx={{ p: 3.5, mb: 3, borderRadius: '10px', bgcolor: '#111', border: '1px solid #1e1e1e' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid #1e1e1e' }}>
+                <PowerSettingsNewIcon sx={{ fontSize: 22, color: '#3b82f6' }} />
+                <Typography sx={{ color: '#d0d0d0', fontWeight: 700, fontSize: '0.9rem', fontFamily: '"Outfit", sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Status Geral
                 </Typography>
               </Box>
-              <Grid container spacing={3}>
+              <Grid container spacing={2.5}>
                 <Grid item xs={12} md={6}>
                   <StatusCard 
                     category="Sistema"
@@ -457,15 +458,15 @@ function StatusMaquina() {
               </Grid>
             </Paper>
             
-            {/* Seção 2: Autoclave - Paper agrupado */}
-            <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, pb: 2, borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
-                <CompressIcon sx={{ fontSize: 32, color: '#f59e0b' }} />
-                <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 800 }}>
+            {/* Seção 2: Autoclave */}
+            <Paper elevation={0} sx={{ p: 3.5, mb: 3, borderRadius: '10px', bgcolor: '#111', border: '1px solid #1e1e1e' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid #1e1e1e' }}>
+                <CompressIcon sx={{ fontSize: 22, color: '#f59e0b' }} />
+                <Typography sx={{ color: '#d0d0d0', fontWeight: 700, fontSize: '0.9rem', fontFamily: '"Outfit", sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Autoclave
                 </Typography>
               </Box>
-              <Grid container spacing={3}>
+              <Grid container spacing={2.5}>
                 <Grid item xs={12} md={6}>
                   <StatusCard 
                     category="Autoclave"
@@ -485,27 +486,20 @@ function StatusMaquina() {
               </Grid>
             </Paper>
             
-            {/* Seção 3: Saco de Ar - Paper agrupado */}
-            <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, pb: 2, borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
-                <InventoryIcon sx={{ fontSize: 32, color: '#10b981' }} />
-                <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 800 }}>
+            {/* Seção 3: Saco de Ar */}
+            <Paper elevation={0} sx={{ p: 3.5, mb: 3, borderRadius: '10px', bgcolor: '#111', border: '1px solid #1e1e1e' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid #1e1e1e' }}>
+                <InventoryIcon sx={{ fontSize: 22, color: '#10b981' }} />
+                <Typography sx={{ color: '#d0d0d0', fontWeight: 700, fontSize: '0.9rem', fontFamily: '"Outfit", sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Saco de Ar
                 </Typography>
-                <Chip 
-                  label={`${liveData.pressao_saco_ar != null ? parseFloat(liveData.pressao_saco_ar).toFixed(2) : 0} bar`} 
-                  sx={{ 
-                    ml: 'auto', 
-                    fontWeight: 800, 
-                    fontSize: '1rem',
-                    bgcolor: '#10b981',
-                    color: '#ffffff',
-                    px: 2,
-                    py: 2.5
-                  }} 
-                />
+                <Box sx={{ ml: 'auto', px: 1.5, py: 0.5, bgcolor: '#10b98118', border: '1px solid #10b98155', borderRadius: '6px' }}>
+                  <Typography sx={{ color: '#10b981', fontWeight: 700, fontSize: '0.875rem', fontFamily: '"Outfit", sans-serif' }}>
+                    {liveData.pressao_saco_ar != null ? parseFloat(liveData.pressao_saco_ar).toFixed(2) : '0'} bar
+                  </Typography>
+                </Box>
               </Box>
-              <Grid container spacing={3}>
+              <Grid container spacing={2.5}>
                 <Grid item xs={12} md={6}>
                   <StatusCard 
                     category="Saco de Ar"
@@ -529,27 +523,20 @@ function StatusMaquina() {
               </Grid>
             </Paper>
             
-            {/* Seção 4: Envelope - Paper agrupado */}
-            <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, pb: 2, borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
-                <MailIcon sx={{ fontSize: 32, color: '#8b5cf6' }} />
-                <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 800 }}>
+            {/* Seção 4: Envelope */}
+            <Paper elevation={0} sx={{ p: 3.5, mb: 3, borderRadius: '10px', bgcolor: '#111', border: '1px solid #1e1e1e' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid #1e1e1e' }}>
+                <MailIcon sx={{ fontSize: 22, color: '#8b5cf6' }} />
+                <Typography sx={{ color: '#d0d0d0', fontWeight: 700, fontSize: '0.9rem', fontFamily: '"Outfit", sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                   Envelope
                 </Typography>
-                <Chip 
-                  label={`${liveData.pressao_envelope != null ? parseFloat(liveData.pressao_envelope).toFixed(2) : 0} bar`} 
-                  sx={{ 
-                    ml: 'auto', 
-                    fontWeight: 800, 
-                    fontSize: '1rem',
-                    bgcolor: '#8b5cf6',
-                    color: '#ffffff',
-                    px: 2,
-                    py: 2.5
-                  }} 
-                />
+                <Box sx={{ ml: 'auto', px: 1.5, py: 0.5, bgcolor: '#8b5cf618', border: '1px solid #8b5cf655', borderRadius: '6px' }}>
+                  <Typography sx={{ color: '#8b5cf6', fontWeight: 700, fontSize: '0.875rem', fontFamily: '"Outfit", sans-serif' }}>
+                    {liveData.pressao_envelope != null ? parseFloat(liveData.pressao_envelope).toFixed(2) : '0'} bar
+                  </Typography>
+                </Box>
               </Box>
-              <Grid container spacing={3}>
+              <Grid container spacing={2.5}>
                 <Grid item xs={12} md={6}>
                   <StatusCard 
                     category="Envelope"
@@ -573,93 +560,57 @@ function StatusMaquina() {
               </Grid>
             </Paper>
             
-            {/* Seção 5: Informações Adicionais - Paper agrupado */}
-            <Paper elevation={3} sx={{ p: 4, borderRadius: 3, background: 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(40, 40, 40, 0.95) 100%)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, pb: 2, borderBottom: '2px solid rgba(255, 255, 255, 0.1)' }}>
-                <Typography variant="h5" sx={{ color: '#ffffff', fontWeight: 800 }}>
-                  📊 Informações Adicionais
+            {/* Seção 5: Informações Adicionais */}
+            <Paper elevation={0} sx={{ p: 3.5, borderRadius: '10px', bgcolor: '#111', border: '1px solid #1e1e1e' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 3, pb: 2, borderBottom: '1px solid #1e1e1e' }}>
+                <Typography sx={{ color: '#d0d0d0', fontWeight: 700, fontSize: '0.9rem', fontFamily: '"Outfit", sans-serif', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  Informações Adicionais
                 </Typography>
               </Box>
-              <Grid container spacing={3}>
+              <Grid container spacing={2.5}>
                 <Grid item xs={12} md={4}>
-                  <Card 
-                    elevation={3} 
-                    sx={{ 
-                      borderRadius: 3, 
-                      background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(40, 40, 40, 0.95) 100%)', 
-                      border: '3px solid #f59e0b',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: '0 16px 48px rgba(245, 158, 11, 0.4)',
-                      }
-                    }}
-                  >
-                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                      <ThermostatOutlined sx={{ fontSize: 48, color: '#f59e0b', mb: 2 }} />
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, letterSpacing: 1.5, display: 'block', mb: 2 }}>
-                        TEMPERATURA
+                  <Card elevation={0} sx={{ borderRadius: '10px', bgcolor: '#161616', border: '1px solid #f59e0b44', transition: 'all 0.25s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 32px rgba(245,158,11,0.2)', borderColor: '#f59e0b88' } }}>
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <ThermostatOutlined sx={{ fontSize: 36, color: '#f59e0b', mb: 1.5 }} />
+                      <Typography sx={{ color: '#4a4a4a', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.14em', display: 'block', mb: 1.5 }}>
+                        Temperatura
                       </Typography>
-                      <Typography variant="h2" sx={{ color: '#f59e0b', fontWeight: 900, mb: 1, textShadow: '0 0 20px rgba(245, 158, 11, 0.4)' }}>
+                      <Typography sx={{ color: '#f59e0b', fontWeight: 700, fontSize: '2.875rem', lineHeight: 1, fontFamily: '"Outfit", sans-serif', letterSpacing: '-0.02em' }}>
                         {liveData.temperatura != null ? parseFloat(liveData.temperatura).toFixed(1) : '-'}
                       </Typography>
-                      <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                      <Typography sx={{ color: '#3a3a3a', fontWeight: 600, fontSize: '0.875rem', mt: 0.75 }}>
                         °C
                       </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                  <Card 
-                    elevation={3} 
-                    sx={{ 
-                      borderRadius: 3, 
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(40, 40, 40, 0.95) 100%)', 
-                      border: '3px solid #10b981',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: '0 16px 48px rgba(16, 185, 129, 0.4)',
-                      }
-                    }}
-                  >
-                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                      <SpeedOutlined sx={{ fontSize: 48, color: '#10b981', mb: 2 }} />
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, letterSpacing: 1.5, display: 'block', mb: 2 }}>
-                        PRESSÃO
+                  <Card elevation={0} sx={{ borderRadius: '10px', bgcolor: '#161616', border: '1px solid #10b98144', transition: 'all 0.25s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 32px rgba(16,185,129,0.2)', borderColor: '#10b98188' } }}>
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <SpeedOutlined sx={{ fontSize: 36, color: '#10b981', mb: 1.5 }} />
+                      <Typography sx={{ color: '#4a4a4a', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.14em', display: 'block', mb: 1.5 }}>
+                        Pressão
                       </Typography>
-                      <Typography variant="h2" sx={{ color: '#10b981', fontWeight: 900, mb: 1, textShadow: '0 0 20px rgba(16, 185, 129, 0.4)' }}>
+                      <Typography sx={{ color: '#10b981', fontWeight: 700, fontSize: '2.875rem', lineHeight: 1, fontFamily: '"Outfit", sans-serif', letterSpacing: '-0.02em' }}>
                         {liveData.vibracao != null ? parseFloat(liveData.vibracao).toFixed(2) : '-'}
                       </Typography>
-                      <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                      <Typography sx={{ color: '#3a3a3a', fontWeight: 600, fontSize: '0.875rem', mt: 0.75 }}>
                         Pa
                       </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
                 <Grid item xs={12} md={4}>
-                  <Card 
-                    elevation={3} 
-                    sx={{ 
-                      borderRadius: 3, 
-                      background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(40, 40, 40, 0.95) 100%)', 
-                      border: '3px solid #3b82f6',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: '0 16px 48px rgba(59, 130, 246, 0.4)',
-                      }
-                    }}
-                  >
-                    <CardContent sx={{ p: 4, textAlign: 'center' }}>
-                      <ProductionQuantityLimitsOutlined sx={{ fontSize: 48, color: '#3b82f6', mb: 2 }} />
-                      <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, letterSpacing: 1.5, display: 'block', mb: 2 }}>
-                        PEÇAS PRODUZIDAS
+                  <Card elevation={0} sx={{ borderRadius: '10px', bgcolor: '#161616', border: '1px solid #3b82f644', transition: 'all 0.25s ease', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 32px rgba(59,130,246,0.2)', borderColor: '#3b82f688' } }}>
+                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                      <ProductionQuantityLimitsOutlined sx={{ fontSize: 36, color: '#3b82f6', mb: 1.5 }} />
+                      <Typography sx={{ color: '#4a4a4a', fontWeight: 700, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.14em', display: 'block', mb: 1.5 }}>
+                        Peças Produzidas
                       </Typography>
-                      <Typography variant="h2" sx={{ color: '#3b82f6', fontWeight: 900, mb: 1, textShadow: '0 0 20px rgba(59, 130, 246, 0.4)' }}>
+                      <Typography sx={{ color: '#3b82f6', fontWeight: 700, fontSize: '2.875rem', lineHeight: 1, fontFamily: '"Outfit", sans-serif', letterSpacing: '-0.02em' }}>
                         {liveData.pecas_produzidas || '-'}
                       </Typography>
-                      <Typography variant="h6" sx={{ color: '#94a3b8', fontWeight: 600 }}>
+                      <Typography sx={{ color: '#3a3a3a', fontWeight: 600, fontSize: '0.875rem', mt: 0.75 }}>
                         unidades
                       </Typography>
                     </CardContent>

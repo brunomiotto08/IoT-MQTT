@@ -9,7 +9,6 @@ import {
   AppBar,
   Toolbar,
   IconButton,
-  Grid,
   Paper,
   Chip,
   LinearProgress,
@@ -17,7 +16,6 @@ import {
   Alert,
   Button,
   Divider,
-  Stack,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
@@ -39,8 +37,9 @@ function KpiCard({ label, value, unit, icon, color = '#e2e2e2', subtext }) {
     <Box sx={{
       bgcolor: '#161616',
       border: '1px solid #222',
-      borderRadius: 2,
-      p: 2.5,
+      borderRadius: '10px',
+      px: 3.5,
+      py: 3,
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
@@ -48,34 +47,53 @@ function KpiCard({ label, value, unit, icon, color = '#e2e2e2', subtext }) {
       position: 'relative',
       overflow: 'hidden',
     }}>
-      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, bgcolor: color, opacity: 0.7 }} />
+      {/* Top accent bar */}
+      <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 3, bgcolor: color, opacity: 0.8 }} />
+
+      {/* Label + icon row */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#555', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+        <Typography sx={{
+          fontSize: '0.7rem',
+          fontWeight: 700,
+          color: '#4a4a4a',
+          textTransform: 'uppercase',
+          letterSpacing: '0.12em',
+          fontFamily: '"Outfit", sans-serif',
+        }}>
           {label}
         </Typography>
-        <Box sx={{ color: color, opacity: 0.6, '& .MuiSvgIcon-root': { fontSize: 18 } }}>
+        <Box sx={{ color: color, opacity: 0.55, '& .MuiSvgIcon-root': { fontSize: 20 } }}>
           {icon}
         </Box>
       </Box>
-      <Box sx={{ mt: 1.5 }}>
+
+      {/* Value */}
+      <Box sx={{ mt: 2.5 }}>
         {value !== null && value !== undefined ? (
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-            <Typography sx={{ fontSize: '2rem', fontWeight: 700, color, fontFamily: '"Outfit", sans-serif', lineHeight: 1, letterSpacing: '-0.02em' }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+            <Typography sx={{
+              fontSize: '2.75rem',
+              fontWeight: 700,
+              color,
+              fontFamily: '"Outfit", sans-serif',
+              lineHeight: 1,
+              letterSpacing: '-0.03em',
+            }}>
               {value}
             </Typography>
             {unit && (
-              <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: '#555', lineHeight: 1 }}>
+              <Typography sx={{ fontSize: '1rem', fontWeight: 600, color: '#3a3a3a', lineHeight: 1, mb: '4px' }}>
                 {unit}
               </Typography>
             )}
           </Box>
         ) : (
-          <Box sx={{ height: 32, display: 'flex', alignItems: 'center' }}>
-            <LinearProgress sx={{ width: '60%', height: 2, borderRadius: 1 }} />
+          <Box sx={{ height: 44, display: 'flex', alignItems: 'center' }}>
+            <LinearProgress sx={{ width: '55%', height: 2, borderRadius: 1 }} />
           </Box>
         )}
         {subtext && (
-          <Typography sx={{ fontSize: '0.7rem', color: '#555', mt: 0.5 }}>{subtext}</Typography>
+          <Typography sx={{ fontSize: '0.7rem', color: '#3a3a3a', mt: 0.75 }}>{subtext}</Typography>
         )}
       </Box>
     </Box>
@@ -125,12 +143,9 @@ export default function CicloMonitor() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Dados do ciclo
   const [ciclo, setCiclo] = useState(null);
   const [leituras, setLeituras] = useState([]);
   const [pneus, setPneus] = useState([]);
-
-  // Dados ao vivo (apenas ciclos ativos)
   const [liveData, setLiveData] = useState(null);
   const [elapsedSec, setElapsedSec] = useState(0);
 
@@ -189,7 +204,6 @@ export default function CicloMonitor() {
   const fetchCicloRef = useRef(fetchCiclo);
   fetchCicloRef.current = fetchCiclo;
 
-  // Run after session is available, or when cicloId changes
   useEffect(() => {
     if (!session) return;
     fetchCiclo();
@@ -219,7 +233,6 @@ export default function CicloMonitor() {
         const p = typeof msg === 'string' ? JSON.parse(msg) : msg;
         if (ciclo && p.maquina_id === ciclo.maquina_id && p.ciclo_id === cicloId) {
           setLiveData(p);
-          // Adicionar ao gráfico em tempo real
           setLeituras(prev => {
             const nova = { ...p, created_at: p.timestamp || new Date().toISOString() };
             const updated = [...prev, nova];
@@ -255,7 +268,6 @@ export default function CicloMonitor() {
 
   const elapsedMin = elapsedSec / 60;
 
-  // Estatísticas do ciclo
   const temps = leituras.map(l => parseFloat(l.temperatura)).filter(v => !isNaN(v));
   const stats = {
     maxTemp: temps.length ? Math.max(...temps).toFixed(1) : null,
@@ -263,7 +275,6 @@ export default function CicloMonitor() {
     avgTemp: temps.length ? (temps.reduce((a, b) => a + b, 0) / temps.length).toFixed(1) : null,
   };
 
-  // Dados ao vivo ou última leitura
   const temp = liveData?.temperatura != null ? parseFloat(liveData.temperatura).toFixed(1) : null;
   const pressEnv = liveData?.pressao_envelope != null ? parseFloat(liveData.pressao_envelope).toFixed(2) : null;
   const pressSaco = liveData?.pressao_saco_ar != null ? parseFloat(liveData.pressao_saco_ar).toFixed(2) : null;
@@ -276,50 +287,94 @@ export default function CicloMonitor() {
 
   const chartOptions = {
     chart: {
-      type: 'line',
+      type: 'area',
       background: 'transparent',
-      foreColor: '#aaa',
-      fontFamily: '"Poppins", sans-serif',
-      zoom: { enabled: true },
-      toolbar: { show: true, tools: { download: true, zoom: true, zoomin: true, zoomout: true, pan: true, reset: true } },
-      animations: { enabled: ciclo?.status === 'ativo', dynamicAnimation: { enabled: true, speed: 800 } },
+      foreColor: '#555',
+      fontFamily: '"Outfit", sans-serif',
+      toolbar: { show: false },
+      zoom: { enabled: false },
+      animations: {
+        enabled: ciclo?.status === 'ativo',
+        dynamicAnimation: { enabled: true, speed: 800 },
+      },
+      dropShadow: { enabled: false },
     },
     theme: { mode: 'dark' },
     stroke: { curve: 'smooth', width: [3, 2, 2] },
-    grid: { borderColor: '#1e1e1e', strokeDashArray: 4 },
+    grid: {
+      borderColor: '#1c1c1c',
+      strokeDashArray: 5,
+      xaxis: { lines: { show: false } },
+      yaxis: { lines: { show: true } },
+      padding: { top: 8, right: 8, bottom: 4, left: 8 },
+    },
     xaxis: {
       type: 'datetime',
       labels: {
         format: 'HH:mm',
-        style: { colors: '#555', fontSize: '11px' },
+        style: { colors: '#3a3a3a', fontSize: '11px', fontWeight: 500 },
         datetimeUTC: false,
+        offsetY: 2,
       },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
     },
     yaxis: [
       {
-        title: { text: 'Temperatura (°C)', style: { color: '#f97316', fontWeight: 700 } },
-        labels: { style: { colors: '#f97316' }, formatter: v => `${v?.toFixed(0)}°` },
+        labels: {
+          style: { colors: '#f97316', fontSize: '11px' },
+          formatter: v => v != null ? `${v.toFixed(0)}°` : '',
+        },
       },
       {
         opposite: true,
-        title: { text: 'Pressão (bar)', style: { color: '#60a5fa', fontWeight: 700 } },
-        labels: { style: { colors: '#60a5fa' }, formatter: v => `${v?.toFixed(1)}` },
+        labels: {
+          style: { colors: '#60a5fa', fontSize: '11px' },
+          formatter: v => v != null ? v.toFixed(1) : '',
+        },
       },
       { show: false },
     ],
     tooltip: {
       theme: 'dark',
-      x: { format: 'dd/MM HH:mm:ss' },
-      y: { formatter: (v, { seriesIndex }) => seriesIndex === 0 ? `${v?.toFixed(1)}°C` : `${v?.toFixed(2)} bar` },
+      x: { format: 'HH:mm:ss' },
+      style: { fontSize: '12px', fontFamily: '"Outfit", sans-serif' },
+      custom({ series: s, seriesIndex, dataPointIndex, w }) {
+        const v = s[seriesIndex][dataPointIndex];
+        const ts = new Date(w.globals.seriesX[seriesIndex][dataPointIndex]);
+        const colors = ['#f97316', '#60a5fa', '#a78bfa'];
+        const c = colors[seriesIndex] || colors[0];
+        const name = w.config.series[seriesIndex]?.name || '';
+        const formatted = seriesIndex === 0 ? `${v?.toFixed(1)}°C` : `${v?.toFixed(2)} bar`;
+        return `<div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:6px;padding:10px 14px;min-width:150px;">
+          <div style="color:${c};font-size:11px;font-weight:600;margin-bottom:4px;">${name}</div>
+          <div style="color:${c};font-size:17px;font-weight:700;">${formatted}</div>
+          <div style="color:#444;font-size:11px;margin-top:4px;">${ts.toLocaleTimeString('pt-BR')}</div>
+        </div>`;
+      },
     },
     legend: {
+      show: true,
       position: 'top',
       horizontalAlign: 'left',
-      labels: { colors: '#888' },
-      markers: { width: 10, height: 10, radius: 5 },
+      fontSize: '12px',
+      fontWeight: 600,
+      labels: { colors: '#666' },
+      markers: { width: 8, height: 8, radius: 4 },
+      itemMargin: { horizontal: 12 },
     },
     colors: ['#f97316', '#60a5fa', '#a78bfa'],
     markers: { size: 0, hover: { size: 5 } },
+    fill: {
+      type: ['gradient', 'gradient', 'gradient'],
+      gradient: {
+        shade: 'dark',
+        type: 'vertical',
+        opacityFrom: 0.12,
+        opacityTo: 0,
+        stops: [0, 100],
+      },
+    },
   };
 
   const chartSeries = [
@@ -364,7 +419,6 @@ export default function CicloMonitor() {
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
 
-          {/* Identidade do ciclo */}
           <Box sx={{ flex: 1 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
               <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#e2e2e2', fontFamily: '"Outfit", sans-serif' }}>
@@ -395,7 +449,6 @@ export default function CicloMonitor() {
                 </Box>
               )}
             </Box>
-            {/* Barra de progresso inline */}
             <ProgressBar elapsedMin={elapsedMin} status={ciclo?.status} />
           </Box>
 
@@ -408,11 +461,11 @@ export default function CicloMonitor() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ py: 3, px: { xs: 2, md: 4 } }}>
+      <Container maxWidth="xl" sx={{ py: 3.5, px: { xs: 2, md: 4 } }}>
 
         {/* ── KPI Cards ────────────────────────────────────────── */}
-        <Grid container spacing={1.5} sx={{ mb: 3 }}>
-          <Grid item xs={6} sm={3}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3.5, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <KpiCard
               label="Temperatura Atual"
               value={temp}
@@ -420,8 +473,8 @@ export default function CicloMonitor() {
               icon={<ThermostatOutlined />}
               color={temp != null ? (parseFloat(temp) >= 100 ? '#ef4444' : parseFloat(temp) >= 90 ? '#f59e0b' : '#f97316') : '#555'}
             />
-          </Grid>
-          <Grid item xs={6} sm={3}>
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <KpiCard
               label="Pressão Envelope"
               value={pressEnv}
@@ -429,8 +482,8 @@ export default function CicloMonitor() {
               icon={<SpeedOutlined />}
               color="#60a5fa"
             />
-          </Grid>
-          <Grid item xs={6} sm={3}>
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <KpiCard
               label="Pressão Saco de Ar"
               value={pressSaco}
@@ -438,8 +491,8 @@ export default function CicloMonitor() {
               icon={<SpeedOutlined />}
               color="#a78bfa"
             />
-          </Grid>
-          <Grid item xs={6} sm={3}>
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <KpiCard
               label="Status da Máquina"
               value={statusMaquina ? (statusMaquina.charAt(0).toUpperCase() + statusMaquina.slice(1)) : (ciclo?.status === 'concluido' ? 'Concluído' : '—')}
@@ -447,31 +500,38 @@ export default function CicloMonitor() {
               color={statusMaquina ? ({ ativo: '#4ade80', running: '#4ade80', ok: '#4ade80', erro: '#ef4444' }[statusMaquina.toLowerCase()] || '#aaa') : '#555'}
               subtext={liveData ? `Última leitura: ${new Date(liveData.created_at || Date.now()).toLocaleTimeString('pt-BR')}` : undefined}
             />
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* ── Gráfico principal ─────────────────────────────────── */}
         <Paper sx={{
-          mb: 3,
+          mb: 3.5,
           p: 3,
           bgcolor: '#161616',
           border: '1px solid #222',
-          borderRadius: 2,
+          borderRadius: '10px',
         }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography sx={{ fontWeight: 700, color: '#d0d0d0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Telemetria do Ciclo
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {ciclo?.status === 'ativo' && (
-                <Chip size="small" label="Ao vivo" sx={{ bgcolor: 'rgba(74,222,128,0.1)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.25)', fontSize: '0.68rem', height: 20 }} />
-              )}
-              <Typography variant="caption" sx={{ color: '#444' }}>{leituras.length} leituras</Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+            <Box>
+              <Typography sx={{ fontWeight: 700, color: '#d0d0d0', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.12em', fontFamily: '"Outfit", sans-serif' }}>
+                Telemetria do Ciclo
+              </Typography>
+              <Typography sx={{ color: '#3a3a3a', fontSize: '0.68rem', mt: 0.25 }}>
+                {leituras.length} leituras registradas
+              </Typography>
             </Box>
+            {ciclo?.status === 'ativo' && (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.625, px: 1.25, py: 0.5, bgcolor: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.2)', borderRadius: '6px' }}>
+                <Box sx={{ width: 5, height: 5, borderRadius: '50%', bgcolor: '#4ade80', animation: 'pulse 2s infinite', '@keyframes pulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.4 } } }} />
+                <Typography sx={{ color: '#4ade80', fontSize: '0.68rem', fontWeight: 700, letterSpacing: '0.06em' }}>
+                  AO VIVO
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {leituras.length === 0 ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 240 }}>
               <Typography variant="body2" sx={{ color: '#444' }}>
                 {ciclo?.status === 'ativo' ? 'Aguardando leituras do CLP...' : 'Nenhuma leitura registrada para este ciclo.'}
               </Typography>
@@ -480,127 +540,166 @@ export default function CicloMonitor() {
             <ReactApexChart
               options={chartOptions}
               series={chartSeries}
-              type="line"
-              height={360}
+              type="area"
+              height={400}
             />
           )}
         </Paper>
 
         {/* ── Pneus + Resumo ────────────────────────────────────── */}
-        <Grid container spacing={2}>
+        <Box sx={{ display: 'flex', gap: 2.5, alignItems: 'stretch', flexDirection: { xs: 'column', md: 'row' } }}>
 
-          {/* Pneus */}
-          <Grid item xs={12} md={7}>
-            <Paper sx={{ p: 3, bgcolor: '#161616', border: '1px solid #222', borderRadius: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <TireRepairIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
-                  <Typography sx={{ fontWeight: 700, color: '#d0d0d0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          {/* ── Pneus ─────────────────────────────────────────── */}
+          <Paper sx={{ flex: 7, minWidth: 0, p: 4, bgcolor: '#161616', border: '1px solid #222', borderRadius: '10px' }}>
+            {/* Header */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, pb: 2.5, borderBottom: '1px solid #1e1e1e' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <TireRepairIcon sx={{ color: '#f59e0b', fontSize: 26 }} />
+                <Box>
+                  <Typography sx={{ fontWeight: 700, color: '#d0d0d0', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Outfit", sans-serif' }}>
                     Pneus Registrados
                   </Typography>
-                  <Chip
-                    label={`${pneus.length}/16`}
-                    size="small"
-                    sx={{ bgcolor: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)', fontSize: '0.68rem', height: 20 }}
-                  />
+                  <Typography sx={{ color: '#444', fontSize: '0.78rem', mt: 0.25 }}>
+                    {pneus.length} de 16 slots preenchidos
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Box sx={{ px: 1.75, py: 0.625, bgcolor: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: '8px' }}>
+                  <Typography sx={{ color: '#f59e0b', fontWeight: 700, fontSize: '1rem', fontFamily: '"Outfit", sans-serif', letterSpacing: '-0.01em' }}>
+                    {pneus.length}/16
+                  </Typography>
                 </Box>
                 {ciclo?.status === 'ativo' && (
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="warning"
-                    onClick={() => navigate('/ciclos')}
-                    sx={{ fontSize: '0.72rem' }}
-                  >
-                    Gerenciar Pneus
+                  <Button size="small" variant="outlined" color="warning" onClick={() => navigate('/ciclos')}
+                    sx={{ fontSize: '0.78rem', borderRadius: '6px', px: 1.5 }}>
+                    Gerenciar
                   </Button>
                 )}
               </Box>
+            </Box>
 
-              {pneus.length === 0 ? (
-                <Box sx={{ py: 3, textAlign: 'center' }}>
-                  <Typography variant="body2" sx={{ color: '#444', fontStyle: 'italic' }}>
-                    Nenhum pneu vinculado a este ciclo.
+            {/* Badges */}
+            {pneus.length === 0 ? (
+              <Box sx={{ py: 5, textAlign: 'center' }}>
+                <Typography sx={{ color: '#333', fontSize: '0.9rem', fontStyle: 'italic' }}>
+                  Nenhum pneu vinculado a este ciclo.
+                </Typography>
+                {ciclo?.status === 'ativo' && (
+                  <Typography sx={{ color: '#2a2a2a', fontSize: '0.8rem', mt: 0.75 }}>
+                    Acesse "Ciclos" para registrar pneus.
                   </Typography>
-                  {ciclo?.status === 'ativo' && (
-                    <Typography variant="caption" sx={{ color: '#333', display: 'block', mt: 0.5 }}>
-                      Acesse "Ciclos" para registrar pneus.
+                )}
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.25 }}>
+                {pneus.map((p, i) => (
+                  <Box key={p.id} sx={{
+                    px: 2,
+                    py: 1,
+                    bgcolor: 'rgba(245,158,11,0.06)',
+                    border: '1px solid rgba(245,158,11,0.25)',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                  }}>
+                    <Typography sx={{ color: '#5a4010', fontSize: '0.72rem', fontWeight: 700, lineHeight: 1 }}>
+                      {String(i + 1).padStart(2, '0')}
                     </Typography>
-                  )}
-                </Box>
-              ) : (
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                  {pneus.map((p, i) => (
-                    <Chip
-                      key={p.id}
-                      label={`${i + 1}. ${p.codigo_pneu}`}
-                      size="small"
-                      variant="outlined"
-                      sx={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.72rem',
-                        borderColor: 'rgba(245,158,11,0.35)',
-                        color: '#d4a017',
-                        bgcolor: 'rgba(245,158,11,0.05)',
-                      }}
-                    />
-                  ))}
-                </Box>
-              )}
-            </Paper>
-          </Grid>
+                    <Box sx={{ width: '1px', height: 14, bgcolor: 'rgba(245,158,11,0.2)' }} />
+                    <Typography sx={{ color: '#d4a017', fontFamily: 'monospace', fontSize: '0.9rem', fontWeight: 600, lineHeight: 1 }}>
+                      {p.codigo_pneu}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Paper>
 
-          {/* Resumo */}
-          <Grid item xs={12} md={5}>
-            <Paper sx={{ p: 3, bgcolor: '#161616', border: '1px solid #222', borderRadius: 2, height: '100%' }}>
-              <Typography sx={{ fontWeight: 700, color: '#d0d0d0', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.08em', mb: 2 }}>
+          {/* ── Resumo ────────────────────────────────────────── */}
+          <Paper sx={{ flex: 5, minWidth: 0, p: 4, bgcolor: '#161616', border: '1px solid #222', borderRadius: '10px' }}>
+            {/* Header */}
+            <Box sx={{ mb: 3, pb: 2.5, borderBottom: '1px solid #1e1e1e' }}>
+              <Typography sx={{ fontWeight: 700, color: '#d0d0d0', fontSize: '0.875rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Outfit", sans-serif' }}>
                 Resumo do Ciclo
               </Typography>
-              <Stack spacing={1.5}>
-                <SummaryRow label="Nº do Ciclo" value={fmtNumero(ciclo?.numero_ciclo)} mono />
-                <SummaryRow label="Máquina" value={ciclo?.maquina_nome} />
-                <SummaryRow label="Status" value={ciclo?.status} valueColor={statusColor} />
-                <Divider sx={{ borderColor: '#1e1e1e' }} />
-                <SummaryRow label="Início" value={fmtHora(ciclo?.start_time)} sub={ciclo?.start_time ? new Date(ciclo.start_time).toLocaleDateString('pt-BR') : undefined} />
-                <SummaryRow
-                  label="Fim"
-                  value={ciclo?.end_time ? fmtHora(ciclo.end_time) : (ciclo?.status === 'ativo' ? 'Em andamento…' : 'N/A')}
-                  valueColor={ciclo?.status === 'ativo' ? '#4ade80' : undefined}
-                />
-                <SummaryRow label="Duração" value={fmtElapsed(elapsedSec)} mono />
-                <Divider sx={{ borderColor: '#1e1e1e' }} />
-                <SummaryRow label="Temp. Máxima" value={stats.maxTemp ? `${stats.maxTemp}°C` : '—'} valueColor="#ef4444" />
-                <SummaryRow label="Temp. Mínima" value={stats.minTemp ? `${stats.minTemp}°C` : '—'} valueColor="#60a5fa" />
-                <SummaryRow label="Temp. Média" value={stats.avgTemp ? `${stats.avgTemp}°C` : '—'} valueColor="#f59e0b" />
-                <SummaryRow label="Total de Leituras" value={leituras.length} />
-              </Stack>
-            </Paper>
-          </Grid>
+            </Box>
 
-        </Grid>
+            {/* Stats grid — top block */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, mb: 3 }}>
+              <StatBlock label="Nº Ciclo" value={fmtNumero(ciclo?.numero_ciclo)} mono />
+              <StatBlock label="Máquina" value={ciclo?.maquina_nome} />
+              <StatBlock label="Status" value={ciclo?.status} color={statusColor} />
+            </Box>
+
+            <Divider sx={{ borderColor: '#1e1e1e', mb: 3 }} />
+
+            {/* Time block */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, mb: 3 }}>
+              <StatBlock label="Início" value={fmtHora(ciclo?.start_time)} sub={ciclo?.start_time ? new Date(ciclo.start_time).toLocaleDateString('pt-BR') : undefined} />
+              <StatBlock
+                label="Fim"
+                value={ciclo?.end_time ? fmtHora(ciclo.end_time) : (ciclo?.status === 'ativo' ? 'Ativo…' : 'N/A')}
+                color={ciclo?.status === 'ativo' ? '#4ade80' : undefined}
+              />
+              <StatBlock label="Duração" value={fmtElapsed(elapsedSec)} mono />
+            </Box>
+
+            <Divider sx={{ borderColor: '#1e1e1e', mb: 3 }} />
+
+            {/* Temp stats */}
+            <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1.5 }}>
+              <StatBlock label="Temp. Máx." value={stats.maxTemp ? `${stats.maxTemp}°C` : '—'} color="#ef4444" />
+              <StatBlock label="Temp. Mín." value={stats.minTemp ? `${stats.minTemp}°C` : '—'} color="#60a5fa" />
+              <StatBlock label="Temp. Méd." value={stats.avgTemp ? `${stats.avgTemp}°C` : '—'} color="#f59e0b" />
+              <StatBlock label="Leituras" value={leituras.length} />
+            </Box>
+          </Paper>
+
+        </Box>
       </Container>
     </Box>
   );
 }
 
-// ─── Helper: linha do resumo ────────────────────────────────
-function SummaryRow({ label, value, valueColor, mono, sub }) {
+// ─── Bloco de stat no Resumo ─────────────────────────────────
+function StatBlock({ label, value, color, mono, sub }) {
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
-      <Typography variant="caption" sx={{ color: '#555', fontWeight: 600, flexShrink: 0, mt: '1px' }}>
+    <Box sx={{
+      bgcolor: '#111',
+      border: '1px solid #1e1e1e',
+      borderRadius: '8px',
+      px: 1.75,
+      py: 1.5,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 0.5,
+    }}>
+      <Typography sx={{
+        fontSize: '0.65rem',
+        fontWeight: 700,
+        color: '#3a3a3a',
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        fontFamily: '"Outfit", sans-serif',
+        lineHeight: 1,
+      }}>
         {label}
       </Typography>
-      <Box sx={{ textAlign: 'right' }}>
-        <Typography variant="body2" sx={{
-          color: valueColor || '#aaa',
-          fontWeight: 700,
-          fontFamily: mono ? 'monospace' : undefined,
-          fontSize: mono ? '0.82rem' : '0.825rem',
-        }}>
-          {value ?? '—'}
-        </Typography>
-        {sub && <Typography variant="caption" sx={{ color: '#444', fontSize: '0.65rem', display: 'block' }}>{sub}</Typography>}
-      </Box>
+      <Typography sx={{
+        fontSize: '1rem',
+        fontWeight: 700,
+        color: color || '#c0c0c0',
+        fontFamily: mono ? 'monospace' : '"Outfit", sans-serif',
+        lineHeight: 1.2,
+        wordBreak: 'break-word',
+      }}>
+        {value ?? '—'}
+      </Typography>
+      {sub && (
+        <Typography sx={{ fontSize: '0.68rem', color: '#383838', lineHeight: 1 }}>{sub}</Typography>
+      )}
     </Box>
   );
 }
