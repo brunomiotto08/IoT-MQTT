@@ -32,9 +32,13 @@ app.use(express.json());
 // Middleware para extrair o usuário do token
 app.use(async (req, res, next) => {
   if (req.headers.authorization) {
-    const token = req.headers.authorization.split(' ')[1];
-    const { data: { user } } = await supabase.auth.getUser(token);
-    req.user = user;
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const { data: { user } } = await supabase.auth.getUser(token);
+      req.user = user;
+    } catch (err) {
+      console.error('❌ Erro ao validar token:', err.message);
+    }
   }
   next();
 });
@@ -734,6 +738,12 @@ app.get('/api/ciclos/:id/pneus', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// --- ERROR HANDLER GLOBAL (sempre retorna JSON, nunca HTML) ---
+app.use((err, req, res, next) => {
+  console.error('❌ Erro não tratado:', err.message);
+  res.status(err.status || 500).json({ error: err.message || 'Erro interno do servidor' });
 });
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
