@@ -1,22 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import { 
-  Container, 
-  Grid,
   Typography, 
   Box, 
   Button, 
   AppBar, 
   Toolbar, 
   IconButton,
-  Chip,
-  Avatar,
   LinearProgress,
   Snackbar,
-  Alert,
   Tabs,
   Tab,
+  Select,
+  MenuItem,
+  Tooltip,
 } from '@mui/material';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import RefreshOutlined from '@mui/icons-material/RefreshOutlined';
@@ -32,6 +30,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { supabase } from '../supabaseClient';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -293,52 +294,125 @@ function Dashboard() {
   };
 
   const gaugeSeries = [liveData ? parseFloat(liveData.temperatura) : 0];
-  
-  // Reverter ordem para gráfico (mais antigo ao mais recente)
-  const sortedData = [...filteredData].sort((a, b) => 
-    new Date(a.created_at) - new Date(b.created_at)
+
+  // Dados históricos ordenados ASC (mais antigo → mais recente)
+  const sortedData = useMemo(() =>
+    [...filteredData].sort((a, b) => new Date(a.created_at) - new Date(b.created_at)),
+    [filteredData]
   );
-  
-  const lineSeries = [{
+
+  // ─── Janelas horárias disponíveis ────────────────────────────
+  // Cada janela representa 1 hora com ao menos 1 registro
+  const availableWindows = useMemo(() => {
+    if (!sortedData.length) return [];
+    const windows = [];
+    // Hora arredondada para baixo do primeiro registro
+    const first = new Date(sortedData[0].created_at);
+    first.setMinutes(0, 0, 0);
+    const last = new Date(sortedData[sortedData.length - 1].created_at);
+    const endHour = new Date(last);
+    endHour.setMinutes(0, 0, 0);
+    endHour.setHours(endHour.getHours() + 1);
+
+    const cursor = new Date(first);
+    while (cursor <= endHour) {
+      const wStart = new Date(cursor);
+      const wEnd   = new Date(cursor);
+      wEnd.setHours(wEnd.getHours() + 1);
+      if (sortedData.some(d => {
+        const t = new Date(d.created_at);
+        return t >= wStart && t < wEnd;
+      })) {
+        windows.push({ start: wStart, end: wEnd });
+      }
+      cursor.setHours(cursor.getHours() + 1);
+    }
+    return windows;
+  }, [sortedData]);
+
+  // Índice da janela selecionada; -1 = aguardando dados
+  const [windowIndex, setWindowIndex] = useState(-1);
+
+  // Sempre que as janelas disponíveis mudam, posiciona na última (mais recente)
+  useEffect(() => {
+    if (availableWindows.length > 0) {
+      setWindowIndex(availableWindows.length - 1);
+    }
+  }, [availableWindows.length]);
+
+  // Quando chegam dados ao vivo, avança automaticamente para a janela mais recente
+  useEffect(() => {
+    if (availableWindows.length > 0) {
+      setWindowIndex(prev => {
+        // só avança se o usuário estiver na janela mais recente ou não houver seleção
+        if (prev === availableWindows.length - 2 || prev === -1) {
+          return availableWindows.length - 1;
+        }
+        return prev;
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableWindows.length]);
+
+  const currentWindow = availableWindows[windowIndex] ?? null;
+
+  // Filtra dados para a janela selecionada
+  const windowedData = useMemo(() => {
+    if (!currentWindow) return sortedData;
+    return sortedData.filter(d => {
+      const t = new Date(d.created_at);
+      return t >= currentWindow.start && t < currentWindow.end;
+    });
+  }, [sortedData, currentWindow]);
+
+  // ─── Séries dos gráficos (usam windowedData) ─────────────────
+  const lineSeries = useMemo(() => [{
     name: 'Temperatura',
-    data: sortedData.map((d) => ([
+    data: windowedData.map(d => [
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-      d.temperatura != null ? parseFloat(d.temperatura) : 0
-    ]))
-  }];
-  
-  const vibrationSeries = [{
+      d.temperatura != null ? parseFloat(d.temperatura) : 0,
+    ]),
+  }], [windowedData]);
+
+  const vibrationSeries = useMemo(() => [{
     name: 'Pressão',
-    data: sortedData.map((d) => ([
+    data: windowedData.map(d => [
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-      d.vibracao != null ? parseFloat(d.vibracao) : 0
-    ]))
-  }];
-  
-  const productionSeries = [{
+      d.vibracao != null ? parseFloat(d.vibracao) : 0,
+    ]),
+  }], [windowedData]);
+
+  const productionSeries = useMemo(() => [{
     name: 'Peças Produzidas',
-    data: sortedData.map((d) => ([
+    data: windowedData.map(d => [
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-      d.pecas_produzidas != null ? parseInt(d.pecas_produzidas) : 0
-    ]))
-  }];
-  
-  const pressureSeries = [
+      d.pecas_produzidas != null ? parseInt(d.pecas_produzidas) : 0,
+    ]),
+  }], [windowedData]);
+
+  const pressureSeries = useMemo(() => [
     {
       name: 'Pressão Envelope',
-      data: sortedData.map((d) => ([
+      data: windowedData.map(d => [
         d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-        d.pressao_envelope != null ? parseFloat(d.pressao_envelope) : 0
-      ]))
+        d.pressao_envelope != null ? parseFloat(d.pressao_envelope) : 0,
+      ]),
     },
     {
       name: 'Pressão Saco de Ar',
-      data: sortedData.map((d) => ([
+      data: windowedData.map(d => [
         d.created_at ? new Date(d.created_at).getTime() : Date.now(),
-        d.pressao_saco_ar != null ? parseFloat(d.pressao_saco_ar) : 0
-      ]))
-    }
-  ];
+        d.pressao_saco_ar != null ? parseFloat(d.pressao_saco_ar) : 0,
+      ]),
+    },
+  ], [windowedData]);
+
+  // ─── Helpers de formatação ────────────────────────────────────
+  const fmtHour = (date) =>
+    date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  const fmtWindowLabel = (w) =>
+    `${fmtHour(w.start)} – ${fmtHour(w.end)}`;
 
   const maquinaAtual = maquinas.find(m => String(m.id) === String(maquinaSelecionada));
 
@@ -348,10 +422,13 @@ function Dashboard() {
       <AppBar position="static" elevation={0} sx={{ bgcolor: '#111', borderBottom: '1px solid #1e1e1e' }}>
         <Toolbar sx={{ px: 4, minHeight: '56px !important', gap: 1 }}>
           {/* Logo / breadcrumb */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mr: 4 }}>
-            <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 28, width: 'auto' }} />
+          <Box
+            onClick={() => navigate('/')}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mr: 4, cursor: 'pointer', '&:hover img': { opacity: 0.8 }, '&:hover .empresa-nome': { color: '#aaa' } }}
+          >
+            <img src="/habilita_logo.svg" alt="Habilita" style={{ height: 28, width: 'auto', transition: 'opacity 0.2s' }} />
             <Typography sx={{ color: '#2a2a2a', fontSize: '0.875rem' }}>/</Typography>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#888' }}>
+            <Typography className="empresa-nome" sx={{ fontWeight: 600, fontSize: '0.875rem', color: '#888', transition: 'color 0.2s' }}>
               {maquinaAtual?.nome || 'Dashboard'}
             </Typography>
           </Box>
@@ -440,78 +517,177 @@ function Dashboard() {
       )}
 
       {/* Main Content */}
-      <Container maxWidth="xl" sx={{ py: 3.5, px: { xs: 2, md: 4 } }}>
+      <Box sx={{ py: 3.5, px: { xs: 2, md: 4 } }}>
 
         {/* ── Seção 1: KPIs ─────────────────────────────────── */}
         <SectionLabel label="Leitura em Tempo Real" />
-        <Grid container spacing={2} sx={{ mb: 3.5 }}>
-          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
-            <DataCard
-              title="Temperatura"
-              value={liveData ? liveData.temperatura?.toFixed(1) : null}
-              unit="°C"
-              icon={<ThermostatOutlined />}
-              threshold={true}
-            />
-          </Grid>
-          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
-            <DataCard
-              title="Pressão"
-              value={liveData ? liveData.vibracao?.toFixed(2) : null}
-              unit="Pa"
-              icon={<SpeedOutlined />}
-              threshold={true}
-            />
-          </Grid>
-          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
-            <DataCard
-              title="Status da Máquina"
-              value={liveData ? liveData.status : null}
-              icon={<CheckCircleOutlined />}
-              isStatus={true}
-            />
-          </Grid>
-          <Grid item xs={6} sm={3} sx={{ display: 'flex' }}>
-            <DataCard
-              title="Peças Produzidas"
-              value={liveData ? liveData.pecas_produzidas : null}
-              unit="un"
-              icon={<ProductionQuantityLimitsOutlined />}
-            />
-          </Grid>
-        </Grid>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3.5, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+          {[
+            { title: 'Temperatura',      value: liveData ? liveData.temperatura?.toFixed(1) : null, unit: '°C',  icon: <ThermostatOutlined />,              threshold: true },
+            { title: 'Pressão',          value: liveData ? liveData.vibracao?.toFixed(2) : null,    unit: 'Pa',  icon: <SpeedOutlined />,                  threshold: true },
+            { title: 'Status da Máquina',value: liveData ? liveData.status : null,                  unit: null,  icon: <CheckCircleOutlined />,             isStatus: true  },
+            { title: 'Peças Produzidas', value: liveData ? liveData.pecas_produzidas : null,         unit: 'un',  icon: <ProductionQuantityLimitsOutlined />                },
+          ].map(({ title, value, unit, icon, threshold, isStatus }) => (
+            <Box key={title} sx={{ flex: '1 1 0', minWidth: { xs: 'calc(50% - 8px)', sm: 0 }, display: 'flex' }}>
+              <DataCard title={title} value={value} unit={unit} icon={icon} threshold={threshold} isStatus={isStatus} />
+            </Box>
+          ))}
+        </Box>
 
-        {/* ── Seção 2: Gauge + Temperatura ──────────────────── */}
+        {/* ── Navegação por janela horária ──────────────────── */}
+        {availableWindows.length > 0 && (
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            mb: 3,
+            px: 2,
+            py: 1.25,
+            bgcolor: '#141414',
+            border: '1px solid #1e1e1e',
+            borderRadius: '8px',
+            flexWrap: 'wrap',
+          }}>
+            {/* Ícone + label */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mr: 0.5 }}>
+              <AccessTimeIcon sx={{ fontSize: 14, color: '#3a3a3a' }} />
+              <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, color: '#3a3a3a', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                Período
+              </Typography>
+            </Box>
+
+            {/* Seta anterior */}
+            <Tooltip title="Hora anterior">
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={windowIndex <= 0}
+                  onClick={() => setWindowIndex(i => i - 1)}
+                  sx={{ color: windowIndex <= 0 ? '#252525' : '#555', '&:hover': { color: '#aaa' }, p: 0.5 }}
+                >
+                  <ChevronLeftIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            {/* Label da janela atual */}
+            <Typography sx={{
+              fontSize: '0.875rem',
+              fontWeight: 700,
+              color: '#ccc',
+              fontFamily: '"Outfit", sans-serif',
+              minWidth: 130,
+              textAlign: 'center',
+            }}>
+              {currentWindow ? fmtWindowLabel(currentWindow) : '—'}
+            </Typography>
+
+            {/* Seta próxima */}
+            <Tooltip title="Próxima hora">
+              <span>
+                <IconButton
+                  size="small"
+                  disabled={windowIndex >= availableWindows.length - 1}
+                  onClick={() => setWindowIndex(i => i + 1)}
+                  sx={{ color: windowIndex >= availableWindows.length - 1 ? '#252525' : '#555', '&:hover': { color: '#aaa' }, p: 0.5 }}
+                >
+                  <ChevronRightIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              </span>
+            </Tooltip>
+
+            {/* Separador */}
+            <Box sx={{ width: 1, height: 20, bgcolor: '#1e1e1e', mx: 0.5 }} />
+
+            {/* Seletor rápido de hora */}
+            <Select
+              size="small"
+              value={windowIndex >= 0 ? windowIndex : ''}
+              onChange={(e) => setWindowIndex(Number(e.target.value))}
+              displayEmpty
+              sx={{
+                fontSize: '0.78rem',
+                color: '#888',
+                bgcolor: '#111',
+                border: '1px solid #222',
+                borderRadius: '6px',
+                '& .MuiSelect-select': { py: 0.6, px: 1.5 },
+                '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                '& .MuiSvgIcon-root': { color: '#444' },
+                minWidth: 160,
+              }}
+            >
+              {availableWindows.map((w, i) => (
+                <MenuItem key={i} value={i} sx={{ fontSize: '0.8rem' }}>
+                  {fmtWindowLabel(w)}
+                  {i === availableWindows.length - 1 && (
+                    <Typography component="span" sx={{ ml: 1, fontSize: '0.68rem', color: '#22c55e', fontWeight: 700 }}>
+                      ao vivo
+                    </Typography>
+                  )}
+                </MenuItem>
+              ))}
+            </Select>
+
+            {/* Contador de janelas */}
+            <Typography sx={{ fontSize: '0.68rem', color: '#2a2a2a', ml: 'auto' }}>
+              {windowIndex + 1} / {availableWindows.length}
+            </Typography>
+          </Box>
+        )}
+
+        {/* ── Seção 2: Gauge + Histórico de Temperatura ─────── */}
         <SectionLabel label="Temperatura" />
-        <Grid container spacing={2} sx={{ mb: 3.5 }} alignItems="stretch">
-          <Grid item xs={12} md={4} lg={3} sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3.5, alignItems: 'stretch', flexDirection: { xs: 'column', md: 'row' } }}>
+          <Box sx={{ width: { xs: '100%', md: 280 }, flexShrink: 0 }}>
             <GaugeChart series={gaugeSeries} />
-          </Grid>
-          <Grid item xs={12} md={8} lg={9} sx={{ display: 'flex' }}>
-            <LineChart series={lineSeries} title="Histórico de Temperatura" unit="°C" color="#3b82f6" />
-          </Grid>
-        </Grid>
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <LineChart
+              series={lineSeries}
+              title="Histórico de Temperatura"
+              unit="°C"
+              color="#3b82f6"
+              scrollable
+            />
+          </Box>
+        </Box>
 
-        {/* ── Seção 3: Pressão + Produção (igual) ───────────── */}
+        {/* ── Seção 3: Pressão + Produção ───────────────────── */}
         <SectionLabel label="Pressão e Produção" />
-        <Grid container spacing={2} sx={{ mb: 3.5 }} alignItems="stretch">
-          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
-            <LineChart series={vibrationSeries} title="Pressão" unit="Pa" color="#6366f1" />
-          </Grid>
-          <Grid item xs={12} md={6} sx={{ display: 'flex' }}>
-            <LineChart series={productionSeries} title="Produção Acumulada" unit="un" color="#22c55e" />
-          </Grid>
-        </Grid>
+        <Box sx={{ display: 'flex', gap: 2, mb: 3.5, alignItems: 'stretch', flexDirection: { xs: 'column', md: 'row' } }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <LineChart
+              series={vibrationSeries}
+              title="Pressão"
+              unit="Pa"
+              color="#6366f1"
+              scrollable
+            />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <LineChart
+              series={productionSeries}
+              title="Produção Acumulada"
+              unit="un"
+              color="#22c55e"
+              scrollable
+            />
+          </Box>
+        </Box>
 
-        {/* ── Seção 4: Pressões envelope e saco de ar ───────── */}
+        {/* ── Seção 4: Pressões Envelope e Saco de Ar ───────── */}
         <SectionLabel label="Pressões — Envelope e Saco de Ar" />
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={12} sx={{ display: 'flex' }}>
-            <LineChart series={pressureSeries} title="Pressões — Envelope e Saco de Ar" unit="bar" />
-          </Grid>
-        </Grid>
+        <Box sx={{ mb: 3 }}>
+          <LineChart
+            series={pressureSeries}
+            title="Pressões — Envelope e Saco de Ar"
+            unit="bar"
+            scrollable
+          />
+        </Box>
 
-      </Container>
+      </Box>
       
       {/* Notificação */}
       <Snackbar

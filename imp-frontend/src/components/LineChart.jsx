@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import Chart from 'react-apexcharts';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -7,7 +7,13 @@ import TrendingFlatIcon from '@mui/icons-material/TrendingFlat';
 
 const MULTI_COLORS = ['#3b82f6', '#6366f1', '#22c55e', '#f59e0b'];
 
-function buildOptions({ colors, unit, isMulti, showLegend }) {
+// Pixels por ponto de dado — determina o "zoom" horizontal do gráfico scrollável.
+// Com 10px/ponto, ~360 pontos cabem em 3600px de largura (~1h a 10s/ponto).
+const PX_PER_POINT = 10;
+// Largura mínima visível (px) — garante que o gráfico preencha o card mesmo com poucos pontos
+const MIN_CHART_WIDTH = 700;
+
+function buildOptions({ colors, unit, isMulti, showLegend, scrollable }) {
   return {
     chart: {
       background: 'transparent',
@@ -26,7 +32,7 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
     dataLabels: { enabled: false },
     stroke: {
       curve: 'smooth',
-      width: 2,
+      width: scrollable ? 1.5 : 2,
       lineCap: 'round',
     },
     fill: {
@@ -34,7 +40,7 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
       gradient: {
         shade: 'dark',
         type: 'vertical',
-        opacityFrom: isMulti ? 0.1 : 0.13,
+        opacityFrom: isMulti ? 0.10 : 0.12,
         opacityTo: 0,
         stops: [0, 100],
       },
@@ -53,6 +59,10 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
         format: 'HH:mm',
         style: { colors: '#3a3a3a', fontSize: '11px', fontWeight: 500 },
         offsetY: 2,
+        // Em modo scrollável mostra mais ticks já que o chart é largo
+        rotate: 0,
+        hideOverlappingLabels: true,
+        showDuplicates: false,
       },
       axisBorder: { show: false },
       axisTicks: { show: false },
@@ -86,7 +96,7 @@ function buildOptions({ colors, unit, isMulti, showLegend }) {
     },
     markers: {
       size: 0,
-      hover: { size: 4, sizeOffset: 2 },
+      hover: { size: 3, sizeOffset: 2 },
     },
     legend: showLegend ? {
       show: true,
@@ -117,19 +127,34 @@ function TrendIcon({ trend, color }) {
   return <TrendingFlatIcon sx={sx} />;
 }
 
-function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', color = '#3b82f6' }) {
-  const isMulti = series.length > 1;
-  const colors = isMulti ? MULTI_COLORS.slice(0, series.length) : [color];
+function LineChart({ series, title = 'Histórico', unit = '°C', color = '#3b82f6', scrollable = false }) {
+  const isMulti   = series.length > 1;
+  const colors    = isMulti ? MULTI_COLORS.slice(0, series.length) : [color];
   const dataPoints = series[0]?.data?.length || 0;
   const latestValue = series[0]?.data?.[dataPoints - 1]?.[1];
   const trend = getTrend(series);
-
   const trendColor = trend === 'up' ? '#f59e0b' : trend === 'down' ? '#3b82f6' : '#555';
 
+  // Ref para o container scrollável
+  const scrollRef = useRef(null);
+
+  // Rola automaticamente para o final (dados mais recentes) sempre que os dados mudam
+  useEffect(() => {
+    if (scrollable && scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, [series, scrollable]);
+
+  // Largura do gráfico em modo scrollável:
+  // cada ponto ocupa PX_PER_POINT pixels, mas no mínimo MIN_CHART_WIDTH
+  const chartPxWidth = scrollable && dataPoints > 0
+    ? Math.max(MIN_CHART_WIDTH, dataPoints * PX_PER_POINT)
+    : null; // null = 100% (não scrollável)
+
   const options = useMemo(
-    () => buildOptions({ colors, unit, isMulti, showLegend: isMulti }),
+    () => buildOptions({ colors, unit, isMulti, showLegend: isMulti, scrollable }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [color, unit, isMulti, series.length]
+    [color, unit, isMulti, series.length, scrollable]
   );
 
   return (
@@ -144,9 +169,9 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
       transition: 'border-color 0.2s',
       '&:hover': { borderColor: '#2a2a2a' },
     }}>
-      <CardContent sx={{ p: 3, pb: '16px !important', flex: 1, display: 'flex', flexDirection: 'column' }}>
+      <CardContent sx={{ p: 3, pb: '16px !important', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5, flexShrink: 0 }}>
           <Box>
             <Typography variant="overline" sx={{ color: '#555', fontWeight: 600, letterSpacing: '0.08em', fontSize: '0.7rem' }}>
               {title}
@@ -163,16 +188,49 @@ function LineChart({ series, title = 'Histórico de Temperatura', unit = '°C', 
               </Box>
             )}
           </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {scrollable && dataPoints > 0 && (
+              <Typography variant="caption" sx={{ color: '#2a2a2a', fontSize: '0.62rem' }}>
+                ← role para ver histórico
+              </Typography>
+            )}
             <Typography variant="caption" sx={{ color: '#2a2a2a', fontSize: '0.65rem' }}>
               {dataPoints} pts
             </Typography>
           </Box>
         </Box>
 
-        {/* Chart — fills remaining flex space */}
-        <Box sx={{ flex: 1, mx: -0.5, minHeight: 0 }}>
-          <Chart options={options} series={series} type="area" height={300} />
+        {/* Wrapper scrollável horizontalmente */}
+        <Box
+          ref={scrollRef}
+          sx={{
+            flex: 1,
+            overflowX: scrollable ? 'auto' : 'hidden',
+            overflowY: 'hidden',
+            mx: -0.5,
+            minHeight: 0,
+            // Scrollbar fina e discreta
+            '&::-webkit-scrollbar': { height: 4 },
+            '&::-webkit-scrollbar-track': { bgcolor: '#111', borderRadius: 2 },
+            '&::-webkit-scrollbar-thumb': {
+              bgcolor: '#2a2a2a',
+              borderRadius: 2,
+              '&:hover': { bgcolor: '#3a3a3a' },
+            },
+          }}
+        >
+          <Box sx={{
+            width: chartPxWidth ? `${chartPxWidth}px` : '100%',
+            minWidth: '100%',
+          }}>
+            <Chart
+              options={options}
+              series={series}
+              type="area"
+              height={280}
+              width={chartPxWidth ?? '100%'}
+            />
+          </Box>
         </Box>
       </CardContent>
     </Card>
