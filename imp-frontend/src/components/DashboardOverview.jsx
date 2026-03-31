@@ -3,9 +3,18 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import {
   Box, Container, Typography, AppBar, Toolbar, Button, IconButton,
-  Grid, Card, CardContent, CardActionArea, LinearProgress,
+  Card, CardContent, LinearProgress,
   Snackbar, Alert, Divider, Chip,
 } from '@mui/material';
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, DragOverlay,
+} from '@dnd-kit/core';
+import {
+  arrayMove, SortableContext, rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
 import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import ProductionQuantityLimitsOutlined from '@mui/icons-material/ProductionQuantityLimitsOutlined';
@@ -18,9 +27,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AddIcon from '@mui/icons-material/Add';
-import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import TireRepairIcon from '@mui/icons-material/TireRepair';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import { supabase } from '../supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import soundManager from '../utils/soundManager';
@@ -81,15 +90,15 @@ function NavButton({ icon, label, active, onClick }) {
 
 function MetricCell({ icon, label, value, color }) {
   return (
-    <Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25 }}>
-        <Box sx={{ color: '#444', '& .MuiSvgIcon-root': { fontSize: 13 } }}>{icon}</Box>
-        <Typography variant="caption" sx={{ color: '#555', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+    <Box sx={{ bgcolor: '#111', border: '1px solid #1a1a1a', borderRadius: '8px', px: 2, py: 1.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
+        <Box sx={{ color: '#333', '& .MuiSvgIcon-root': { fontSize: 15 } }}>{icon}</Box>
+        <Typography sx={{ color: '#383838', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, fontFamily: '"Outfit", sans-serif', lineHeight: 1 }}>
           {label}
         </Typography>
       </Box>
-      <Typography variant="body2" sx={{ color: color ?? '#aaa', fontWeight: 700, fontFamily: '"Outfit", sans-serif', fontSize: '0.95rem' }}>
-        {value ?? '—'}
+      <Typography sx={{ color: color ?? '#aaa', fontWeight: 700, fontFamily: '"Outfit", sans-serif', fontSize: '1.5rem', lineHeight: 1, letterSpacing: '-0.02em' }}>
+        {value ?? <span style={{ color: '#2a2a2a', fontSize: '0.875rem' }}>—</span>}
       </Typography>
     </Box>
   );
@@ -235,10 +244,168 @@ function CicloAtivoCard({ ciclo, liveTemp, livePressEnv, navigate }) {
   );
 }
 
+// ─── Card de máquina (puro — sem drag) ───────────────────────
+function MachineCard({ maquina, liveReadings, navigate, dragHandleProps = {} }) {
+  const r = liveReadings[maquina.id];
+  const sColor = getStatusColor(r?.status);
+  const hasData = !!r;
+  const isAlert = hasData && r.status && !['ok', 'ativo', 'running'].includes(r.status.toLowerCase());
+
+  return (
+    <Card elevation={0} sx={{
+      height: '100%',
+      bgcolor: '#161616',
+      border: '1px solid',
+      borderColor: isAlert ? `${sColor}35` : '#1e1e1e',
+      borderRadius: '12px',
+      position: 'relative',
+      overflow: 'hidden',
+      transition: 'border-color 0.2s, box-shadow 0.2s',
+      '&:hover': { borderColor: isAlert ? `${sColor}66` : '#2e2e2e', boxShadow: '0 6px 32px rgba(0,0,0,0.5)' },
+    }}>
+      {/* Barra de status no topo */}
+      <Box sx={{ height: '3px', bgcolor: hasData ? sColor : '#1e1e1e', opacity: hasData ? 0.8 : 1 }} />
+
+      <CardContent sx={{ p: 3.5 }}>
+        {/* ── Header ── */}
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2.5 }}>
+          <Box
+            sx={{ flex: 1, minWidth: 0, pr: 1, cursor: 'pointer' }}
+            onClick={() => navigate(`/dashboard/${maquina.id}`)}
+          >
+            <Typography sx={{
+              fontWeight: 700, color: '#e2e2e2', fontSize: '1.375rem',
+              lineHeight: 1.2, mb: 0.5, fontFamily: '"Outfit", sans-serif',
+              letterSpacing: '-0.01em',
+            }}>
+              {maquina.nome}
+            </Typography>
+            <Typography sx={{ color: '#3a3a3a', fontSize: '0.825rem', fontWeight: 500 }}>
+              {maquina.modelo || 'Sem modelo'}
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+            {/* Status badge */}
+            <Box sx={{
+              display: 'flex', alignItems: 'center', gap: 0.75,
+              px: 1.5, py: 0.625,
+              bgcolor: hasData ? `${sColor}14` : '#111',
+              border: `1px solid ${hasData ? sColor + '44' : '#222'}`,
+              borderRadius: '8px',
+              cursor: 'pointer',
+            }} onClick={() => navigate(`/dashboard/${maquina.id}`)}>
+              <Box sx={{
+                width: 7, height: 7, borderRadius: '50%', bgcolor: hasData ? sColor : '#333',
+                ...(hasData && ['ativo','running','ok'].includes(r?.status?.toLowerCase()) && {
+                  animation: 'dotPulse 2s infinite',
+                  '@keyframes dotPulse': { '0%,100%': { opacity: 1 }, '50%': { opacity: 0.35 } },
+                }),
+              }} />
+              <Typography sx={{ color: hasData ? sColor : '#444', fontWeight: 700, fontSize: '0.78rem', fontFamily: '"Outfit", sans-serif' }}>
+                {hasData ? getStatusLabel(r?.status) : 'Sem dados'}
+              </Typography>
+            </Box>
+
+            {/* Drag handle */}
+            <Box
+              {...dragHandleProps}
+              sx={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, borderRadius: '6px',
+                color: '#2a2a2a', cursor: 'grab',
+                transition: 'color 0.15s, background 0.15s',
+                '&:hover': { color: '#555', bgcolor: '#1e1e1e' },
+                '&:active': { cursor: 'grabbing' },
+              }}
+            >
+              <DragIndicatorIcon sx={{ fontSize: 18 }} />
+            </Box>
+          </Box>
+        </Box>
+
+        {/* ── Métricas ── */}
+        <Box
+          sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2.5, cursor: 'pointer' }}
+          onClick={() => navigate(`/dashboard/${maquina.id}`)}
+        >
+          <MetricCell
+            icon={<ThermostatOutlined />} label="Temperatura"
+            value={hasData && r.temperatura != null ? `${parseFloat(r.temperatura).toFixed(1)}°C` : null}
+            color={hasData && r.temperatura != null
+              ? (parseFloat(r.temperatura) >= 90 ? '#ef4444' : parseFloat(r.temperatura) >= 70 ? '#f59e0b' : '#22c55e')
+              : '#444'}
+          />
+          <MetricCell
+            icon={<SpeedOutlined />} label="Pressão"
+            value={hasData && r.vibracao != null ? `${parseFloat(r.vibracao).toFixed(2)} Pa` : null}
+            color={hasData && r.vibracao != null
+              ? (parseFloat(r.vibracao) >= 8 ? '#ef4444' : parseFloat(r.vibracao) >= 5 ? '#f59e0b' : '#22c55e')
+              : '#444'}
+          />
+          <MetricCell
+            icon={<SpeedOutlined />} label="P. Envelope"
+            value={hasData && r.pressao_envelope != null ? `${parseFloat(r.pressao_envelope).toFixed(2)} bar` : null}
+            color="#60a5fa"
+          />
+          <MetricCell
+            icon={<ProductionQuantityLimitsOutlined />} label="Peças Produz."
+            value={hasData && r.pecas_produzidas != null ? String(r.pecas_produzidas) : null}
+            color="#a78bfa"
+          />
+        </Box>
+
+        {/* ── Footer ── */}
+        <Box
+          sx={{ pt: 2, borderTop: '1px solid #1a1a1a', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+          onClick={() => navigate(`/dashboard/${maquina.id}`)}
+        >
+          <Typography sx={{ color: '#2a2a2a', fontSize: '0.68rem', fontFamily: 'monospace' }}>
+            {maquina.uuid_maquina || maquina.id}
+          </Typography>
+          <Typography sx={{ color: r?.created_at ? '#3a3a3a' : '#222', fontSize: '0.72rem', fontWeight: 500 }}>
+            {r?.created_at ? `Atualizado ${new Date(r.created_at).toLocaleTimeString('pt-BR')}` : 'Aguardando dados'}
+          </Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Wrapper sortable ─────────────────────────────────────────
+function SortableMachineCard({ maquina, liveReadings, navigate }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: String(maquina.id),
+  });
+
+  return (
+    <Box
+      ref={setNodeRef}
+      {...attributes}
+      sx={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.25 : 1,
+        height: '100%',
+      }}
+    >
+      <MachineCard
+        maquina={maquina}
+        liveReadings={liveReadings}
+        navigate={navigate}
+        dragHandleProps={listeners}
+      />
+    </Box>
+  );
+}
+
+// ─── Dashboard ────────────────────────────────────────────────
 export default function DashboardOverview() {
   const navigate = useNavigate();
   const [session, setSession] = useState(null);
   const [maquinas, setMaquinas] = useState([]);
+  const [orderedIds, setOrderedIds] = useState([]);
+  const [activeDragId, setActiveDragId] = useState(null);
   const [liveReadings, setLiveReadings] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [empresaNome, setEmpresaNome] = useState('');
@@ -252,6 +419,11 @@ export default function DashboardOverview() {
   const [liveCicloReadings, setLiveCicloReadings] = useState({});
 
   const sessionRef = useRef(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const fetchCiclosAtivos = useCallback(async () => {
     const s = sessionRef.current;
@@ -330,6 +502,15 @@ export default function DashboardOverview() {
       });
       const data = await res.json();
       setMaquinas(data || []);
+      // Restaurar ordem salva (merge com novos IDs não salvos)
+      const storageKey = `maquina_order_${localStorage.getItem('empresa_id') || 'default'}`;
+      const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      const apiIds = (data || []).map(m => String(m.id));
+      const merged = [
+        ...saved.filter(id => apiIds.includes(id)),
+        ...apiIds.filter(id => !saved.includes(id)),
+      ];
+      setOrderedIds(merged);
       const init = {};
       (data || []).forEach(m => {
         if (m.ultima_leitura) {
@@ -407,7 +588,7 @@ export default function DashboardOverview() {
 
       {isLoading && <LinearProgress sx={{ height: 2 }} />}
 
-      <Container maxWidth="xl" sx={{ py: 4, px: { xs: 2, md: 4 } }}>
+      <Container maxWidth={false} sx={{ py: 4, px: { xs: 2, md: 4 } }}>
         {/* ══ Seção: Ciclos em Andamento ══════════════════════ */}
         {ciclosAtivos.length > 0 && (
           <Box sx={{ mb: 4 }}>
@@ -483,101 +664,58 @@ export default function DashboardOverview() {
             </Button>
           </Box>
         ) : (
-          <Grid container spacing={2}>
-            {maquinas.map((maquina) => {
-              const r = liveReadings[maquina.id];
-              const statusColor = getStatusColor(r?.status);
-              const hasData = !!r;
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={({ active }) => setActiveDragId(active.id)}
+            onDragEnd={({ active, over }) => {
+              setActiveDragId(null);
+              if (!over || active.id === over.id) return;
+              setOrderedIds(prev => {
+                const oldIdx = prev.indexOf(active.id);
+                const newIdx = prev.indexOf(over.id);
+                const next = arrayMove(prev, oldIdx, newIdx);
+                const storageKey = `maquina_order_${localStorage.getItem('empresa_id') || 'default'}`;
+                localStorage.setItem(storageKey, JSON.stringify(next));
+                return next;
+              });
+            }}
+            onDragCancel={() => setActiveDragId(null)}
+          >
+            <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
+              <Box sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                gap: 3,
+                maxWidth: '1400px',
+                mx: 'auto',
+              }}>
+                {orderedIds
+                  .map(id => maquinas.find(m => String(m.id) === id))
+                  .filter(Boolean)
+                  .map(maquina => (
+                    <SortableMachineCard
+                      key={maquina.id}
+                      maquina={maquina}
+                      liveReadings={liveReadings}
+                      navigate={navigate}
+                    />
+                  ))
+                }
+              </Box>
+            </SortableContext>
 
-              return (
-                <Grid item xs={12} sm={6} lg={4} xl={3} key={maquina.id}>
-                  <Card elevation={0} sx={{
-                    height: '100%',
-                    bgcolor: '#161616',
-                    border: '1px solid',
-                    borderColor: hasData && r.status && r.status.toLowerCase() !== 'ok' ? `${statusColor}30` : '#222',
-                    borderRadius: '10px',
-                    transition: 'border-color 0.2s, box-shadow 0.2s',
-                    '&:hover': { borderColor: '#3a3a3a', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' },
-                  }}>
-                    <CardActionArea onClick={() => navigate(`/dashboard/${maquina.id}`)} sx={{ height: '100%' }}>
-                      <CardContent sx={{ p: 2.5 }}>
-
-                        {/* Header do card */}
-                        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
-                          <Box>
-                            <Typography variant="body1" sx={{ fontWeight: 700, color: '#d0d0d0', lineHeight: 1.3, mb: 0.25 }}>
-                              {maquina.nome}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#444' }}>
-                              {maquina.modelo || 'Sem modelo'}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
-                            <Box sx={{ width: 7, height: 7, borderRadius: '50%', bgcolor: hasData ? statusColor : '#333' }} />
-                            <Typography variant="caption" sx={{ color: hasData ? statusColor : '#444', fontWeight: 600, fontSize: '0.7rem' }}>
-                              {hasData ? getStatusLabel(r?.status) : 'Sem dados'}
-                            </Typography>
-                          </Box>
-                        </Box>
-
-                        <Divider sx={{ borderColor: '#1e1e1e', mb: 2 }} />
-
-                        {/* Métricas */}
-                        <Grid container spacing={1.5}>
-                          <Grid item xs={6}>
-                            <MetricCell
-                              icon={<ThermostatOutlined />}
-                              label="Temperatura"
-                              value={hasData && r.temperatura != null ? `${parseFloat(r.temperatura).toFixed(1)}°C` : null}
-                              color={hasData && r.temperatura != null ? (parseFloat(r.temperatura) >= 90 ? '#ef4444' : parseFloat(r.temperatura) >= 70 ? '#f59e0b' : '#22c55e') : '#444'}
-                            />
-                          </Grid>
-                          <Grid item xs={6}>
-                            <MetricCell
-                              icon={<SpeedOutlined />}
-                              label="Pressão"
-                              value={hasData && r.vibracao != null ? `${parseFloat(r.vibracao).toFixed(2)} Pa` : null}
-                              color={hasData && r.vibracao != null ? (parseFloat(r.vibracao) >= 8 ? '#ef4444' : parseFloat(r.vibracao) >= 5 ? '#f59e0b' : '#22c55e') : '#444'}
-                            />
-                          </Grid>
-                          <Grid item xs={6}>
-                            <MetricCell
-                              icon={<SpeedOutlined />}
-                              label="P. Envelope"
-                              value={hasData && r.pressao_envelope != null ? `${parseFloat(r.pressao_envelope).toFixed(2)} bar` : null}
-                              color="#aaa"
-                            />
-                          </Grid>
-                          <Grid item xs={6}>
-                            <MetricCell
-                              icon={<ProductionQuantityLimitsOutlined />}
-                              label="Peças"
-                              value={hasData && r.pecas_produzidas != null ? r.pecas_produzidas : null}
-                              color="#aaa"
-                            />
-                          </Grid>
-                        </Grid>
-
-                        {/* Footer */}
-                        {r?.created_at && (
-                          <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px solid #1e1e1e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="caption" sx={{ color: '#333', fontSize: '0.65rem' }}>
-                              {maquina.uuid_maquina}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: '#333', fontSize: '0.65rem' }}>
-                              {new Date(r.created_at).toLocaleTimeString()}
-                            </Typography>
-                          </Box>
-                        )}
-
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              );
-            })}
-          </Grid>
+            <DragOverlay>
+              {activeDragId ? (() => {
+                const m = maquinas.find(m => String(m.id) === activeDragId);
+                return m ? (
+                  <Box sx={{ opacity: 0.9, boxShadow: '0 16px 48px rgba(0,0,0,0.7)', borderRadius: '12px' }}>
+                    <MachineCard maquina={m} liveReadings={liveReadings} navigate={navigate} />
+                  </Box>
+                ) : null;
+              })() : null}
+            </DragOverlay>
+          </DndContext>
         )}
       </Container>
 

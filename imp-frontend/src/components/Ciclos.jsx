@@ -184,6 +184,74 @@ function DialogGerenciarPneus({ open, onClose, ciclo, session }) {
 }
 
 // ─────────────────────────────────────────
+// Cabeçalho ordenável
+// ─────────────────────────────────────────
+const COL_SX = {
+  numero_ciclo:      { minWidth: 90,  flexShrink: 0 },
+  maquina_nome:      { flex: 2,  minWidth: 0 },
+  start_time:        { flex: 1.5, minWidth: 0, display: { xs: 'none', sm: 'flex' } },
+  duracao_minutos:   { flex: 1,  minWidth: 0, display: { xs: 'none', md: 'flex' } },
+  total_pneus:       { minWidth: 56, flexShrink: 0, display: { xs: 'none', md: 'flex' } },
+};
+
+function ColHeader({ col, label, sortCol, sortDir, onSort, sx = {} }) {
+  const active = sortCol === col;
+  return (
+    <Box
+      onClick={() => onSort(col)}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        cursor: 'pointer',
+        userSelect: 'none',
+        color: active ? '#a0a0a0' : '#383838',
+        transition: 'color 0.15s',
+        '&:hover': { color: '#888' },
+        ...COL_SX[col],
+        ...sx,
+      }}
+    >
+      <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: '"Outfit", sans-serif', lineHeight: 1 }}>
+        {label}
+      </Typography>
+      <Typography sx={{ fontSize: '0.6rem', lineHeight: 1, opacity: active ? 1 : 0, transition: 'opacity 0.15s' }}>
+        {active ? (sortDir === 'asc' ? '▲' : '▼') : '▲'}
+      </Typography>
+    </Box>
+  );
+}
+
+function CicloTableHeader({ sortCol, sortDir, onSort }) {
+  return (
+    <Box sx={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 2,
+      px: 2.5,
+      py: 1,
+      bgcolor: '#111',
+      border: '1px solid #1a1a1a',
+      borderRadius: '8px',
+      mb: 0.5,
+    }}>
+      <ColHeader col="numero_ciclo"    label="Nº Ciclo"  sortCol={sortCol} sortDir={sortDir} onSort={onSort} />
+      <ColHeader col="maquina_nome"    label="Máquina"   sortCol={sortCol} sortDir={sortDir} onSort={onSort} />
+      <ColHeader col="start_time"      label="Início"    sortCol={sortCol} sortDir={sortDir} onSort={onSort} />
+      <ColHeader col="duracao_minutos" label="Duração"   sortCol={sortCol} sortDir={sortDir} onSort={onSort} />
+      <ColHeader col="total_pneus"     label="Pneus"     sortCol={sortCol} sortDir={sortDir} onSort={onSort} />
+      {/* Status + botão — espaços fixos sem ordenação */}
+      <Box sx={{ minWidth: 74, flexShrink: 0 }}>
+        <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#2a2a2a', fontFamily: '"Outfit", sans-serif' }}>
+          Status
+        </Typography>
+      </Box>
+      <Box sx={{ minWidth: 94, flexShrink: 0 }} />
+    </Box>
+  );
+}
+
+// ─────────────────────────────────────────
 // Linha compacta de ciclo (histórico)
 // ─────────────────────────────────────────
 function CicloRow({ ciclo, onMonitorar }) {
@@ -379,6 +447,8 @@ function Ciclos() {
   const [ciclos, setCiclos] = useState([]);
   const [loadingHistorico, setLoadingHistorico] = useState(false);
   const [erroHistorico, setErroHistorico] = useState('');
+  const [sortCol, setSortCol] = useState('start_time');
+  const [sortDir, setSortDir] = useState('desc');
 
   // ── Auth ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -729,14 +799,39 @@ function Ciclos() {
               <Typography sx={{ fontSize: '0.72rem', color: '#3a3a3a', mb: 1.5, fontWeight: 600 }}>
                 {ciclos.length} ciclo(s) encontrado(s)
               </Typography>
-              <Stack spacing={1}>
-                {ciclos.map(ciclo => (
-                  <CicloRow
-                    key={ciclo.id}
-                    ciclo={ciclo}
-                    onMonitorar={(id) => navigate(`/ciclo/${id}`)}
-                  />
-                ))}
+
+              {/* Cabeçalho ordenável */}
+              <CicloTableHeader
+                sortCol={sortCol}
+                sortDir={sortDir}
+                onSort={(col) => {
+                  if (col === sortCol) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+                  else { setSortCol(col); setSortDir('asc'); }
+                }}
+              />
+
+              <Stack spacing={0.75} sx={{ mt: 0.5 }}>
+                {[...ciclos]
+                  .sort((a, b) => {
+                    let va, vb;
+                    if (sortCol === 'numero_ciclo') { va = a.numero_ciclo ?? 0; vb = b.numero_ciclo ?? 0; }
+                    else if (sortCol === 'maquina_nome') { va = a.maquina_nome ?? ''; vb = b.maquina_nome ?? ''; }
+                    else if (sortCol === 'start_time') { va = new Date(a.start_time ?? 0); vb = new Date(b.start_time ?? 0); }
+                    else if (sortCol === 'duracao_minutos') { va = a.duracao_minutos ?? 0; vb = b.duracao_minutos ?? 0; }
+                    else if (sortCol === 'total_pneus') { va = a.total_pneus ?? 0; vb = b.total_pneus ?? 0; }
+                    else if (sortCol === 'status') { va = a.status ?? ''; vb = b.status ?? ''; }
+                    else return 0;
+                    if (va < vb) return sortDir === 'asc' ? -1 : 1;
+                    if (va > vb) return sortDir === 'asc' ?  1 : -1;
+                    return 0;
+                  })
+                  .map(ciclo => (
+                    <CicloRow
+                      key={ciclo.id}
+                      ciclo={ciclo}
+                      onMonitorar={(id) => navigate(`/ciclo/${id}`)}
+                    />
+                  ))}
               </Stack>
             </Box>
           )}
