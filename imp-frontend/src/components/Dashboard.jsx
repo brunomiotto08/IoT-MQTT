@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import { 
@@ -66,342 +66,202 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 function Dashboard() {
   const navigate = useNavigate();
   const { maquinaId } = useParams();
-  const [liveData, setLiveData] = useState(null);
-  const [historicalData, setHistoricalData] = useState([]);
-  const [session, setSession] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState(null);
+
+  const [session, setSession]               = useState(null);
+  const [maquinas, setMaquinas]             = useState([]);
+  const [maquinaSelecionada, setMaquinaSelecionada] = useState(maquinaId || '');
+  const [liveData, setLiveData]             = useState(null);
+  const [filteredData, setFilteredData]     = useState([]); // leituras da máquina atual, ordem ASC
+  const [isLoading, setIsLoading]           = useState(true);
+  const [lastUpdate, setLastUpdate]         = useState(null);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
-  const [empresaNome, setEmpresaNome] = useState('');
-  const [userRole, setUserRole] = useState('');
-  
-  // Estados para notificações Toast
+  const [empresaNome, setEmpresaNome]       = useState('');
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [notificationData, setNotificationData] = useState(null);
-  
-  // Estados para máquinas e filtro
-  const [maquinas, setMaquinas] = useState([]);
-  const [maquinaSelecionada, setMaquinaSelecionada] = useState(maquinaId || '');
-  const [filteredData, setFilteredData] = useState([]);
 
-  useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('Sessão obtida:', session);
-      setSession(session);
-      
-      if (!session) return;
-      
-      // Verificar se empresa_id existe no localStorage
-      let empresaId = localStorage.getItem('empresa_id');
-      
-      if (!empresaId) {
-        console.log('⚠️ empresa_id não encontrado no localStorage, buscando do banco...');
-        
-        try {
-          const { data: vinculoData, error: vinculoError } = await supabase
-            .from('usuarios_empresas')
-            .select('empresa_id, empresas(nome)')
-            .eq('user_id', session.user.id)
-            .single();
+  // Ref para rastrear a máquina atual dentro dos handlers de socket (evita closure stale)
+  const maquinaAtualRef    = useRef(maquinaId || '');
+  const sessionRef         = useRef(null);
+  // Guarda o ID inicial da URL para uso no efeito de carga (sem entrar nas deps)
+  const initialMaquinaId   = useRef(maquinaId || '');
 
-          if (vinculoError || !vinculoData) {
-            console.error('❌ Erro ao buscar empresa do usuário:', vinculoError);
-            return;
-          }
-
-          empresaId = vinculoData.empresa_id.toString();
-          localStorage.setItem('empresa_id', empresaId);
-          
-          if (vinculoData.empresas?.nome) {
-            localStorage.setItem('empresa_nome', vinculoData.empresas.nome);
-            setEmpresaNome(vinculoData.empresas.nome);
-          }
-          
-          console.log('✅ empresa_id recuperado do banco e salvo:', empresaId);
-        } catch (err) {
-          console.error('❌ Erro ao buscar dados da empresa:', err);
-        }
-      }
-      
-      // Carregar dados da empresa do localStorage
-      const empresaNomeLS = localStorage.getItem('empresa_nome');
-      const userRoleLS = localStorage.getItem('user_role');
-      
-      if (empresaNomeLS) setEmpresaNome(empresaNomeLS);
-      if (userRoleLS) setUserRole(userRoleLS);
-    };
-    getSession();
+  // ─── Busca leituras de UMA máquina específica ──────────────
+  const fetchDataForMaquina = useCallback(async (mid, sess) => {
+    const s = sess ?? sessionRef.current;
+    if (!s || !mid) {
+      setLiveData(null);
+      setFilteredData([]);
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const res = await axios.get(`${API_URL}/api/leituras`, {
+        headers: { Authorization: `Bearer ${s.access_token}` },
+        params: { maquina_id: mid },
+      });
+      // API retorna mais recente primeiro → inverter para gráficos (ASC)
+      const asc = (res.data || []).slice().sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at)
+      );
+      setFilteredData(asc);
+      // liveData = último da lista ASC = mais recente
+      setLiveData(asc.length > 0 ? asc[asc.length - 1] : null);
+      setLastUpdate(new Date());
+    } catch (err) {
+      console.error('Erro ao buscar leituras:', err);
+      setFilteredData([]);
+      setLiveData(null);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
+  // ─── Sessão ────────────────────────────────────────────────
   useEffect(() => {
-    const fetchInitialData = async () => {
+    const init = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      
+      setSession(session);
+      sessionRef.current = session;
+
+      let empresaId = localStorage.getItem('empresa_id');
+      if (!empresaId) {
+        const { data: v } = await supabase
+          .from('usuarios_empresas')
+          .select('empresa_id, empresas(nome)')
+          .eq('user_id', session.user.id)
+          .single();
+        if (v) {
+          empresaId = String(v.empresa_id);
+          localStorage.setItem('empresa_id', empresaId);
+          if (v.empresas?.nome) {
+            localStorage.setItem('empresa_nome', v.empresas.nome);
+            setEmpresaNome(v.empresas.nome);
+          }
+        }
+      }
+      const n = localStorage.getItem('empresa_nome');
+      if (n) setEmpresaNome(n);
+    };
+    init();
+  }, []);
+
+  // ─── Carrega máquinas UMA VEZ quando sessão pronta ─────────
+  // Não usa maquinaId nem navigate como deps para evitar re-disparar
+  // ao trocar de aba (que muda a URL e consequentemente maquinaId).
+  useEffect(() => {
+    if (!session) return;
+    const load = async () => {
       try {
-        console.log('Buscando dados históricos...');
-        setIsLoading(true);
-        
-        // Usar o endpoint com autenticação
-        const response = await axios.get(`${API_URL}/api/leituras`, {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`
-          }
+        const res = await axios.get(`${API_URL}/api/maquinas`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
         });
-        
-        console.log('Dados históricos recebidos:', response.data);
-        const historicalArray = response.data || [];
-        setHistoricalData(historicalArray);
-        
-        // Definir o dado mais recente como liveData para mostrar nos cards
-        // Como os dados agora vêm em ordem descendente (mais recentes primeiro),
-        // o primeiro elemento é o mais recente
-        if (historicalArray.length > 0) {
-          const lastData = historicalArray[0]; // Primeiro elemento = mais recente
-          setLiveData(lastData);
-          console.log('📊 Dado mais recente definido como liveData:', lastData);
-        }
-        
-        setLastUpdate(new Date());
-      } catch (error) {
-        console.error('Erro ao buscar dados históricos:', error);
-        
-        // Fallback para o endpoint de teste se houver erro
-        try {
-          const fallbackResponse = await axios.get(`${API_URL}/api/leituras-test`);
-          const fallbackArray = fallbackResponse.data || [];
-          setHistoricalData(fallbackArray);
-          
-          // Definir o dado mais recente como liveData
-          if (fallbackArray.length > 0) {
-            const lastData = fallbackArray[0]; // Primeiro elemento = mais recente
-            setLiveData(lastData);
-            console.log('📊 Dado mais recente (fallback) definido como liveData:', lastData);
+        const lista = res.data || [];
+        setMaquinas(lista);
+
+        // Determinar máquina inicial a partir do ID que veio na URL
+        const idUrl  = initialMaquinaId.current;
+        const existe = idUrl && lista.find(m => String(m.id) === idUrl);
+        const inicial = existe ? idUrl : (lista.length > 0 ? String(lista[0].id) : '');
+
+        if (inicial) {
+          maquinaAtualRef.current = inicial;
+          // Sempre busca os dados diretamente após carregar as máquinas, passando
+          // a sessão explicitamente. Isso cobre o caso onde maquinaSelecionada já
+          // tinha o mesmo valor (acesso direto via URL) e o useEffect abaixo não
+          // dispara novamente por não haver mudança de estado.
+          setMaquinaSelecionada(inicial);
+          fetchDataForMaquina(inicial, session);
+          if (!existe && lista.length > 0) {
+            navigate(`/dashboard/${inicial}`, { replace: true });
           }
-          
-          setLastUpdate(new Date());
-        } catch (fallbackError) {
-          console.error('Erro no fallback:', fallbackError);
         }
-      } finally {
-        setIsLoading(false);
+      } catch (err) {
+        console.error('Erro ao buscar máquinas:', err);
       }
     };
+    load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, fetchDataForMaquina]); // fetchDataForMaquina é estável (useCallback sem deps)
 
-    fetchInitialData();
-    fetchMaquinas();
+  // ─── Sempre que maquinaSelecionada mudar → re-busca dados ──
+  useEffect(() => {
+    const mid = String(maquinaSelecionada || '');
+    if (!mid) return;
+    maquinaAtualRef.current = mid;
+    fetchDataForMaquina(mid);
+  }, [maquinaSelecionada, fetchDataForMaquina]);
 
-    // DEBUG: Testar se este código está rodando
-    console.log('🚀 DASHBOARD: useEffect do WebSocket executado!');
-    console.log('🚀 Socket existe?', socket ? 'SIM' : 'NÃO');
-    console.log('🚀 Socket conectado?', socket.connected);
-
-    // Socket connection status
+  // ─── WebSocket ─────────────────────────────────────────────
+  useEffect(() => {
     socket.on('connect', () => {
-      console.log('✅ Socket conectado! ID:', socket.id);
-      
-      // Entrar no room da empresa
-      const empresaId = localStorage.getItem('empresa_id');
-      console.log('🔍 Empresa ID do localStorage:', empresaId);
-      
-      if (empresaId) {
-        console.log('🔐 Entrando no room da empresa:', empresaId);
-        socket.emit('join_empresa', empresaId);
-      } else {
-        console.error('❌ empresa_id não encontrado no localStorage');
-      }
-      
+      const eId = localStorage.getItem('empresa_id');
+      if (eId) socket.emit('join_empresa', eId);
       setConnectionStatus('connected');
     });
+    socket.on('disconnect',    () => setConnectionStatus('disconnected'));
+    socket.on('connect_error', () => setConnectionStatus('disconnected'));
+    socket.on('connected',     () => setConnectionStatus('connected'));
 
-    socket.on('disconnect', () => {
-      console.log('Socket desconectado');
-      setConnectionStatus('disconnected');
-    });
-
-    socket.on('connect_error', (error) => {
-      console.log('Erro de conexão do socket:', error);
-      setConnectionStatus('disconnected');
-    });
-
-    socket.on('connected', (data) => {
-      console.log('✅ Confirmação de conexão recebida do servidor:', data);
-      if (data.empresa_id) {
-        console.log('✅ Conectado ao room da empresa:', data.empresa_id);
-      }
-      setConnectionStatus('connected');
-    });
-
-    // Aguardar um pouco para garantir que o empresa_id foi recuperado
-    const checkAndJoinRoom = () => {
-      const empresaId = localStorage.getItem('empresa_id');
-      
-      if (empresaId) {
-        console.log('✅ empresa_id encontrado:', empresaId);
-        if (socket.connected) {
-          console.log('🔐 Socket conectado, entrando no room:', empresaId);
-          socket.emit('join_empresa', empresaId);
-          setConnectionStatus('connected');
-        } else {
-          console.log('⏳ Socket ainda não está conectado, aguardando...');
-          setConnectionStatus('connecting');
-        }
-      } else {
-        console.warn('⚠️ empresa_id ainda não disponível, tentando novamente em 500ms...');
-        setTimeout(checkAndJoinRoom, 500);
-      }
-    };
-    
-    // Tentar entrar no room após um pequeno delay
-    const joinTimeout = setTimeout(checkAndJoinRoom, 300);
+    // Entrar no room se já conectado
+    const eId = localStorage.getItem('empresa_id');
+    if (eId && socket.connected) socket.emit('join_empresa', eId);
 
     socket.on('mqtt_message', (message) => {
       try {
-        // Parsear a mensagem (pode vir como string ou já parseada)
         const parsed = typeof message === 'string' ? JSON.parse(message) : message;
-        console.log('📊 Dados recebidos no Dashboard:', parsed);
-        
-        // Garantir que created_at existe
-        if (!parsed.created_at) {
-          parsed.created_at = new Date().toISOString();
-        }
-        
-        setLiveData(parsed);
-        setLastUpdate(new Date());
+        if (!parsed.created_at) parsed.created_at = new Date().toISOString();
 
-        setHistoricalData((current) => {
-          const updated = [...current, parsed];
-          return updated.length > 50 ? updated.slice(1) : updated;
-        });
-      } catch (error) {
-        console.error('❌ Erro ao processar mensagem MQTT:', error);
+        // Só atualiza liveData/histórico se for da máquina que está sendo exibida
+        if (String(parsed.maquina_id) === maquinaAtualRef.current) {
+          setLiveData(parsed);
+          setFilteredData(prev => {
+            const next = [...prev, parsed];
+            return next.length > 200 ? next.slice(next.length - 200) : next;
+          });
+          setLastUpdate(new Date());
+        }
+      } catch (err) {
+        console.error('Erro ao processar MQTT:', err);
       }
     });
-    
-    // Listener para notificações/alarmes
+
     socket.on('new_notification', (notification) => {
       try {
-        console.log('🔔 Nova notificação recebida:', notification);
-        
-        // Tocar som baseado na prioridade e tipo de limite
-        const prioridade = notification.prioridade || 'media';
-        const tipoLimite = notification.tipoLimite || 'max'; // 'max' ou 'min'
-        soundManager.play(prioridade, tipoLimite);
-        
+        soundManager.play(notification.prioridade || 'media', notification.tipoLimite || 'max');
         setNotificationData(notification);
         setNotificationOpen(true);
-      } catch (error) {
-        console.error('❌ Erro ao processar notificação:', error);
+      } catch (err) {
+        console.error('Erro ao processar notificação:', err);
       }
     });
 
     return () => {
-      clearTimeout(joinTimeout);
       socket.off('mqtt_message');
       socket.off('new_notification');
       socket.off('connect');
       socket.off('disconnect');
+      socket.off('connect_error');
       socket.off('connected');
     };
-  }, [session]);
+  }, []);
 
   const handleLogout = async () => {
-    // Limpar dados do localStorage
     localStorage.removeItem('empresa_id');
     localStorage.removeItem('empresa_nome');
     localStorage.removeItem('user_role');
-    
     await supabase.auth.signOut();
   };
-  
-  const handleCloseNotification = (event, reason) => {
-    if (reason === 'clickaway') {
-      return;
-    }
+
+  const handleCloseNotification = (_, reason) => {
+    if (reason === 'clickaway') return;
     setNotificationOpen(false);
   };
 
-  const handleRefresh = async () => {
-    if (!session) return;
-    
-    try {
-      setIsLoading(true);
-      const response = await axios.get(`${API_URL}/api/leituras`, {
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`
-        }
-      });
-      const historicalArray = response.data || [];
-      setHistoricalData(historicalArray);
-      
-      // Atualizar liveData com o mais recente
-      if (historicalArray.length > 0) {
-        setLiveData(historicalArray[0]);
-      }
-      
-      setLastUpdate(new Date());
-    } catch (error) {
-      console.error('Erro ao atualizar dados:', error);
-      
-      // Fallback para o endpoint de teste
-      try {
-        const fallbackResponse = await axios.get(`${API_URL}/api/leituras-test`);
-        const fallbackArray = fallbackResponse.data || [];
-        setHistoricalData(fallbackArray);
-        
-        // Atualizar liveData com o mais recente
-        if (fallbackArray.length > 0) {
-          setLiveData(fallbackArray[0]);
-        }
-        
-        setLastUpdate(new Date());
-      } catch (fallbackError) {
-        console.error('Erro no fallback:', fallbackError);
-      }
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRefresh = () => {
+    if (maquinaSelecionada) fetchDataForMaquina(maquinaSelecionada);
   };
-  
-  const fetchMaquinas = async () => {
-    if (!session) return;
-    
-    try {
-      const response = await axios.get(`${API_URL}/api/maquinas`, {
-        headers: { 'Authorization': `Bearer ${session.access_token}` }
-      });
-      const lista = response.data || [];
-      setMaquinas(lista);
-      console.log('✅ Máquinas carregadas:', lista.length);
-
-      // Se veio maquinaId na URL, selecionar; caso contrário, selecionar a primeira
-      if (maquinaId && lista.find(m => m.id === maquinaId)) {
-        setMaquinaSelecionada(maquinaId);
-      } else if (!maquinaSelecionada && lista.length > 0) {
-        setMaquinaSelecionada(lista[0].id);
-        navigate(`/dashboard/${lista[0].id}`, { replace: true });
-      }
-    } catch (error) {
-      console.error('Erro ao buscar máquinas:', error);
-    }
-  };
-  
-  // Filtrar dados quando máquina ou dados históricos mudarem
-  useEffect(() => {
-    if (maquinaSelecionada) {
-      const filtered = historicalData.filter(d => d.maquina_id == maquinaSelecionada);
-      setFilteredData(filtered);
-      
-      // Atualizar liveData com o último dado filtrado
-      if (filtered.length > 0) {
-        setLiveData(filtered[filtered.length - 1]);
-      }
-      
-      console.log(`✅ Dados filtrados para máquina ${maquinaSelecionada}:`, filtered.length);
-    } else {
-      setFilteredData(historicalData);
-    }
-  }, [maquinaSelecionada, historicalData]);
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -480,7 +340,7 @@ function Dashboard() {
     }
   ];
 
-  const maquinaAtual = maquinas.find(m => m.id === maquinaSelecionada);
+  const maquinaAtual = maquinas.find(m => String(m.id) === String(maquinaSelecionada));
 
   return (
     <Box sx={{ flexGrow: 1, bgcolor: '#0f0f0f', minHeight: '100vh' }}>
@@ -549,7 +409,12 @@ function Dashboard() {
         <Box sx={{ bgcolor: '#111', borderBottom: '1px solid #1e1e1e', px: 4 }}>
           <Tabs
             value={maquinaSelecionada || false}
-            onChange={(_, val) => { setMaquinaSelecionada(val); navigate(`/dashboard/${val}`); }}
+            onChange={(_, val) => {
+              const id = String(val);
+              maquinaAtualRef.current = id;
+              setMaquinaSelecionada(id);
+              navigate(`/dashboard/${id}`, { replace: true });
+            }}
             variant="scrollable"
             scrollButtons="auto"
             TabIndicatorProps={{ style: { background: '#3b82f6', height: 2 } }}

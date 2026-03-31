@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import Chart from 'react-apexcharts';
 
@@ -13,13 +12,6 @@ function getTemperatureConfig(temp) {
 function GaugeChart({ series }) {
   const temperature = series[0] || 0;
   const cfg = getTemperatureConfig(temperature);
-
-  const [displayTemp, setDisplayTemp] = useState(temperature);
-
-  useEffect(() => {
-    const t = setTimeout(() => setDisplayTemp(temperature), 150);
-    return () => clearTimeout(t);
-  }, [temperature]);
 
   const options = {
     chart: {
@@ -56,7 +48,7 @@ function GaugeChart({ series }) {
             fontFamily: '"Outfit", sans-serif',
             color: cfg.color,
             offsetY: 8,
-            formatter: () => `${displayTemp.toFixed(1)}°`,
+            formatter: () => `${temperature.toFixed(1)}°`,
           },
         },
       },

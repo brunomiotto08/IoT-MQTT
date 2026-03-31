@@ -95,26 +95,34 @@ app.get('/api/leituras', async (req, res) => {
 
     console.log('🏢 Empresa do usuário:', vinculo.empresa_id);
 
-    // 2. Buscar APENAS as leituras da empresa do usuário
-    console.log('🔍 Buscando leituras da empresa:', vinculo.empresa_id);
-    
-    // Permitir limite customizado via query params (padrão: 100)
-    const limit = parseInt(req.query.limit) || 100;
-    const offset = parseInt(req.query.offset) || 0;
-    
-    const { data, error } = await supabase
+    // 2. Buscar leituras filtradas por empresa (obrigatório) e parâmetros opcionais
+    const limit       = parseInt(req.query.limit)  || 500;
+    const offset      = parseInt(req.query.offset) || 0;
+    const maquina_id  = req.query.maquina_id  || null;
+    const data_inicio = req.query.data_inicio || null;
+    const data_fim    = req.query.data_fim    || null;
+
+    console.log(`🔍 Leituras — empresa: ${vinculo.empresa_id} | maquina: ${maquina_id ?? 'todas'} | de: ${data_inicio ?? '-'} até: ${data_fim ?? '-'} | limit: ${limit}`);
+
+    let query = supabase
       .from('leituras_maquina')
       .select('*')
-      .eq('empresa_id', vinculo.empresa_id)  // ✅ FILTRO EXPLÍCITO POR EMPRESA!
-      .order('created_at', { ascending: false }) // Mais recentes primeiro
+      .eq('empresa_id', vinculo.empresa_id);
+
+    if (maquina_id)  query = query.eq('maquina_id', maquina_id);
+    if (data_inicio) query = query.gte('created_at', data_inicio);
+    if (data_fim)    query = query.lte('created_at', data_fim);
+
+    const { data, error } = await query
+      .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
       console.log('❌ Erro ao buscar dados:', error);
       return res.status(500).json({ error: error.message });
     }
-    
-    console.log('✅ Dados encontrados:', data ? data.length : 0, 'registros da empresa', vinculo.empresa_id);
+
+    console.log(`✅ ${data?.length ?? 0} registros retornados`);
     res.json(data);
   } catch (err) {
     console.log('❌ Erro na requisição:', err);

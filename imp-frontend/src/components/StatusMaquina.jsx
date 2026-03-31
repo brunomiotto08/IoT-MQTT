@@ -58,48 +58,43 @@ function StatusMaquina() {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      
       if (session) {
-        const empresaNomeLS = localStorage.getItem('empresa_nome');
-        if (empresaNomeLS) setEmpresaNome(empresaNomeLS);
-        
+        const n = localStorage.getItem('empresa_nome');
+        if (n) setEmpresaNome(n);
         fetchMaquinas(session);
-        fetchLatestData(session);
+        // Dados só serão buscados quando o usuário selecionar uma máquina
+        setIsLoading(false);
       }
     };
     getSession();
   }, []);
   
+  // Re-busca dados quando a máquina selecionada muda
   useEffect(() => {
     if (!session) return;
-    
-    // Socket connection
+    fetchLatestData(session, maquinaSelecionada);
+  }, [maquinaSelecionada, session]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!session) return;
+
     socket.on('connect', () => {
-      console.log('✅ Socket conectado para Status da Máquina');
-      
       const empresaId = localStorage.getItem('empresa_id');
-      if (empresaId) {
-        socket.emit('join_empresa', empresaId);
-      }
+      if (empresaId) socket.emit('join_empresa', empresaId);
     });
-    
+
     socket.on('mqtt_message', (message) => {
       try {
         const parsed = typeof message === 'string' ? JSON.parse(message) : message;
-        console.log('📊 Dados recebidos no Status da Máquina:', parsed);
-        
-        // Filtrar por máquina se selecionada
-        if (maquinaSelecionada && parsed.maquina_id !== maquinaSelecionada) {
-          return; // Ignorar dados de outras máquinas
-        }
-        
+        // Só atualiza se a mensagem for da máquina atualmente selecionada
+        if (maquinaSelecionada && String(parsed.maquina_id) !== String(maquinaSelecionada)) return;
         setLiveData(parsed);
         setLastUpdate(new Date());
       } catch (error) {
         console.error('❌ Erro ao processar mensagem MQTT:', error);
       }
     });
-    
+
     return () => {
       socket.off('mqtt_message');
       socket.off('connect');
@@ -119,47 +114,32 @@ function StatusMaquina() {
     }
   };
   
-  const fetchLatestData = async (sessionParam) => {
+  // maquinaId: ID da máquina a buscar (string). Se vazio, limpa dados.
+  const fetchLatestData = async (sessionParam, maquinaId) => {
     const currentSession = sessionParam || session;
     if (!currentSession) return;
-    
+
+    // Se não tem máquina selecionada, limpa dados e sai
+    if (!maquinaId) {
+      setLiveData(null);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await axios.get(`${API_URL}/api/leituras`, {
-        headers: {
-          'Authorization': `Bearer ${currentSession.access_token}`
-        }
+        headers: { Authorization: `Bearer ${currentSession.access_token}` },
+        params: { maquina_id: maquinaId, limit: 1 }, // só precisa da leitura mais recente
       });
-      
+
       const data = response.data || [];
-      
-      // Filtrar por máquina se selecionada
-      let filteredData = data;
-      if (maquinaSelecionada) {
-        filteredData = data.filter(d => d.maquina_id == maquinaSelecionada);
-      }
-      
-      if (filteredData.length > 0) {
-        const lastData = filteredData[0]; // Primeiro elemento = mais recente
-        setLiveData(lastData);
-        setLastUpdate(new Date());
-      }
+      // API retorna descending → primeiro elemento é o mais recente desta máquina
+      setLiveData(data.length > 0 ? data[0] : null);
+      setLastUpdate(new Date());
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
-      
-      // Fallback
-      try {
-        const fallbackResponse = await axios.get(`${API_URL}/api/leituras-test`);
-        const fallbackData = fallbackResponse.data || [];
-        
-        if (fallbackData.length > 0) {
-          const lastData = fallbackData[0]; // Primeiro elemento = mais recente
-          setLiveData(lastData);
-          setLastUpdate(new Date());
-        }
-      } catch (fallbackError) {
-        console.error('Erro no fallback:', fallbackError);
-      }
+      setLiveData(null);
     } finally {
       setIsLoading(false);
     }
@@ -394,7 +374,7 @@ function StatusMaquina() {
               label="Selecionar Máquina"
               onChange={(e) => {
                 setMaquinaSelecionada(e.target.value);
-                fetchLatestData();
+                // A re-busca é disparada pelo useEffect([maquinaSelecionada])
               }}
               sx={{
                 backgroundColor: 'background.paper',
