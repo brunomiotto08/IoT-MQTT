@@ -365,6 +365,59 @@ export default function CicloMonitor() {
     },
     colors: ['#f97316', '#60a5fa', '#a78bfa'],
     markers: { size: 0, hover: { size: 5 } },
+    dataLabels: {
+      enabled: true,
+      style: {
+        fontSize: '10px',
+        fontFamily: '"Outfit", sans-serif',
+        fontWeight: 700,
+        colors: ['#f97316', '#60a5fa', '#a78bfa'],
+      },
+      background: {
+        enabled: true,
+        foreColor: '#fff',
+        padding: 3,
+        borderRadius: 3,
+        borderWidth: 0,
+        opacity: 0.75,
+        dropShadow: { enabled: false },
+      },
+      offsetY: -5,
+      // Mostra label apenas em picos e vales com variação significativa (≥5% do range)
+      formatter(val, { seriesIndex, dataPointIndex, w }) {
+        if (val === null || val === undefined) return '';
+        const raw = w.config.series[seriesIndex].data;
+        const vals = raw.map(d => (d && typeof d === 'object' ? (d.y ?? d[1]) : d));
+        const n = vals.length;
+        if (n < 3) return seriesIndex === 0 ? `${Number(val).toFixed(0)}°` : Number(val).toFixed(1);
+
+        const curr = vals[dataPointIndex];
+        if (curr === null || curr === undefined) return '';
+
+        // Sempre mostra no primeiro e no último ponto
+        if (dataPointIndex === 0 || dataPointIndex === n - 1) {
+          return seriesIndex === 0 ? `${Number(val).toFixed(0)}°` : Number(val).toFixed(1);
+        }
+
+        const prev = vals[dataPointIndex - 1];
+        const next = vals[dataPointIndex + 1];
+        if (prev === null || next === null) return '';
+
+        // Verifica se é extremo local (pico ou vale)
+        const isMax = curr >= prev && curr >= next;
+        const isMin = curr <= prev && curr <= next;
+        if (!isMax && !isMin) return '';
+
+        // Filtra ruídos: só mostra se a variação for ≥5% do range total da série
+        const valid = vals.filter(v => v !== null && v !== undefined);
+        const range = Math.max(...valid) - Math.min(...valid);
+        if (range === 0) return '';
+        const change = Math.max(Math.abs(curr - prev), Math.abs(curr - next));
+        if (change < range * 0.05) return '';
+
+        return seriesIndex === 0 ? `${Number(val).toFixed(0)}°` : Number(val).toFixed(1);
+      },
+    },
     fill: {
       type: ['gradient', 'gradient', 'gradient'],
       gradient: {
