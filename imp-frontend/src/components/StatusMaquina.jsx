@@ -39,7 +39,7 @@ import ThermostatOutlined from '@mui/icons-material/ThermostatOutlined';
 import SpeedOutlined from '@mui/icons-material/SpeedOutlined';
 import ProductionQuantityLimitsOutlined from '@mui/icons-material/ProductionQuantityLimitsOutlined';
 
-const socket = io('http://localhost:3000');
+const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:3000');
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function StatusMaquina() {
