@@ -16,7 +16,10 @@ const app = express();
 const server = http.createServer(app);
 
 const allowedOrigins = process.env.FRONTEND_URL
-  ? [process.env.FRONTEND_URL, 'http://localhost:5173']
+  ? [
+      ...process.env.FRONTEND_URL.split(',').map(u => u.trim()),
+      'http://localhost:5173'
+    ]
   : '*';
 
 const io = new Server(server, {
