@@ -20,6 +20,7 @@
     "@supabase/supabase-js": "^2.75.0",
     "apexcharts": "^5.3.5",
     "axios": "^1.12.2",
+    "framer-motion": "^12.38.0",
     "react": "^19.1.1",
     "react-apexcharts": "^1.8.0",
     "react-dom": "^19.1.1",

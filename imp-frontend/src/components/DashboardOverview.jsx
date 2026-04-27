@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import {
   Box, Container, Typography, AppBar, Toolbar, Button, IconButton,
-  Card, CardContent, LinearProgress,
+  Card, CardContent, LinearProgress, Grid,
   Snackbar, Alert, Divider, Chip,
 } from '@mui/material';
 import {
@@ -408,7 +408,7 @@ export default function DashboardOverview() {
   const [activeDragId, setActiveDragId] = useState(null);
   const [liveReadings, setLiveReadings] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [empresaNome, setEmpresaNome] = useState('');
+  const [empresaNome, setEmpresaNome] = useState(() => localStorage.getItem('empresa_nome') || '');
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(null);
   const [notification, setNotification] = useState(null);
