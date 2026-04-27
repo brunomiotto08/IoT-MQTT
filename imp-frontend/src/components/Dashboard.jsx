@@ -375,7 +375,7 @@ function Dashboard() {
   }], [windowedData]);
 
   const vibrationSeries = useMemo(() => [{
-    name: 'Pressão',
+    name: 'Vibração',
     data: windowedData.map(d => [
       d.created_at ? new Date(d.created_at).getTime() : Date.now(),
       d.vibracao != null ? parseFloat(d.vibracao) : 0,
@@ -524,7 +524,7 @@ function Dashboard() {
         <Box sx={{ display: 'flex', gap: 2, mb: 3.5, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
           {[
             { title: 'Temperatura',      value: liveData ? liveData.temperatura?.toFixed(1) : null, unit: '°C',  icon: <ThermostatOutlined />,              threshold: true },
-            { title: 'Pressão',          value: liveData ? liveData.vibracao?.toFixed(2) : null,    unit: 'Pa',  icon: <SpeedOutlined />,                  threshold: true },
+            { title: 'Vibração',         value: liveData ? liveData.vibracao?.toFixed(2) : null,    unit: 'Pa',  icon: <SpeedOutlined />,                  threshold: true },
             { title: 'Status da Máquina',value: liveData ? liveData.status : null,                  unit: null,  icon: <CheckCircleOutlined />,             isStatus: true  },
             { title: 'Peças Produzidas', value: liveData ? liveData.pecas_produzidas : null,         unit: 'un',  icon: <ProductionQuantityLimitsOutlined />                },
           ].map(({ title, value, unit, icon, threshold, isStatus }) => (
@@ -653,13 +653,13 @@ function Dashboard() {
           </Box>
         </Box>
 
-        {/* ── Seção 3: Pressão + Produção ───────────────────── */}
-        <SectionLabel label="Pressão e Produção" />
+        {/* ── Seção 3: Vibração + Produção ──────────────────── */}
+        <SectionLabel label="Vibração e Produção" />
         <Box sx={{ display: 'flex', gap: 2, mb: 3.5, alignItems: 'stretch', flexDirection: { xs: 'column', md: 'row' } }}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <LineChart
               series={vibrationSeries}
-              title="Pressão"
+              title="Vibração"
               unit="Pa"
               color="#6366f1"
               scrollable

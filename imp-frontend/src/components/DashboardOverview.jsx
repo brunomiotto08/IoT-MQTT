@@ -338,15 +338,17 @@ function MachineCard({ maquina, liveReadings, navigate, dragHandleProps = {} }) 
           />
           <MetricCell
             icon={<SpeedOutlined />} label="Pressão"
+            value={hasData && r.pressao_envelope != null ? `${parseFloat(r.pressao_envelope).toFixed(2)} bar` : null}
+            color={hasData && r.pressao_envelope != null
+              ? (parseFloat(r.pressao_envelope) >= 8 ? '#ef4444' : parseFloat(r.pressao_envelope) >= 5 ? '#f59e0b' : '#22c55e')
+              : '#444'}
+          />
+          <MetricCell
+            icon={<SpeedOutlined />} label="Vibração"
             value={hasData && r.vibracao != null ? `${parseFloat(r.vibracao).toFixed(2)} Pa` : null}
             color={hasData && r.vibracao != null
               ? (parseFloat(r.vibracao) >= 8 ? '#ef4444' : parseFloat(r.vibracao) >= 5 ? '#f59e0b' : '#22c55e')
               : '#444'}
-          />
-          <MetricCell
-            icon={<SpeedOutlined />} label="P. Envelope"
-            value={hasData && r.pressao_envelope != null ? `${parseFloat(r.pressao_envelope).toFixed(2)} bar` : null}
-            color="#60a5fa"
           />
           <MetricCell
             icon={<ProductionQuantityLimitsOutlined />} label="Peças Produz."
