@@ -337,11 +337,9 @@ function MachineCard({ maquina, liveReadings, navigate, dragHandleProps = {} }) 
               : '#444'}
           />
           <MetricCell
-            icon={<SpeedOutlined />} label="Pressão"
+            icon={<SpeedOutlined />} label="Pressão Envelope"
             value={hasData && r.pressao_envelope != null ? `${parseFloat(r.pressao_envelope).toFixed(2)} bar` : null}
-            color={hasData && r.pressao_envelope != null
-              ? (parseFloat(r.pressao_envelope) >= 8 ? '#ef4444' : parseFloat(r.pressao_envelope) >= 5 ? '#f59e0b' : '#22c55e')
-              : '#444'}
+            color={hasData && r.pressao_envelope != null ? '#60a5fa' : '#444'}
           />
           <MetricCell
             icon={<SpeedOutlined />} label="Vibração"
